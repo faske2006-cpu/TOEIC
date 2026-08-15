@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AI TOEIC 全方位單字學習與 SRS 複習系統</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f3f4f6;
+    margin: 0;
+    padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    color: #333;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+}
+
+h1 {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+h2 {
+    font-size: 1.2rem;
+    margin-top: 0;
+}
+
+.card {
+    background: white;
+    padding: 16px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+
+.api-box {
+    background: #eef6ff;
+    border: 1px solid #b6d8ff;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+.api-box input {
+    margin-top: 5px;
+    margin-bottom: 8px;
+    font-family: monospace;
+    width: 100%;
+}
+
+input, select {
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    width: 100%;
+}
+
+select {
+    background-color: #fff;
+    cursor: pointer;
+}
+
+button {
+    padding: 9px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: opacity 0.2s, background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+button:disabled {
+    background: #ccc !important;
+    cursor: not-allowed;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+}
+
+.btn-xs {
+    padding: 3px 8px;
+    font-size: 0.78rem;
+    border-radius: 4px;
+}
+
+.primary { background: #0078d4; color: white; }
+.success { background: #107c10; color: white; }
+.danger { background: #d9381e; color: white; }
+.secondary { background: #6c757d; color: white; }
+.warning { background: #d97706; color: white; }
+.voice-female { background: #e83e8c; color: white; }
+.voice-male { background: #007bb6; color: white; }
+
+.toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.search-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.search-input-wrap input {
+    padding-right: 30px;
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    display: none;
+}
+
+.btn-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    width: 100%;
+}
+
+.btn-group button {
+    width: 100%;
+    margin: 0;
+}
+
+.stat-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    font-size: 0.82rem;
+}
+
+.stat-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+}
+
+.stat-badge.due { background: #fee2e2; color: #991b1b; }
+.stat-badge.mastered { background: #dcfce7; color: #166534; }
+.stat-badge.learning { background: #fef3c7; color: #b45309; }
+
+.word-card {
+    border: 1px solid #e0e0e0;
+    padding: 14px;
+    margin-top: 10px;
+    border-radius: 8px;
+    background: #fafafa;
+    width: 100%;
+}
+
+.word-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed #e0e0e0;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.word-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.srs-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.srs-star {
+    color: #f59e0b;
+    font-weight: bold;
+}
+
+.srs-due-tag {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.75rem;
+}
+
+.srs-ok-tag {
+    background: #dcfce7;
+    color: #166534;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+/* 條件式高亮 Badge 樣式 */
+.alert-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-left: 6px;
+    line-height: 1.2;
+    vertical-align: middle;
+}
+
+.badge-irregular-verb {
+    background-color: #ffe3e3;
+    color: #c92a2a;
+    border: 1px solid #ffc9c9;
+}
+
+.badge-irregular-noun {
+    background-color: #ffe8cc;
+    color: #d9480f;
+    border: 1px solid #ffd8a8;
+}
+
+.badge-same-form {
+    background-color: #e7f5ff;
+    color: #1864ab;
+    border: 1px solid #d0ebff;
+}
+
+/* 差異加粗與三態橫向展繪 */
+.irregular-highlight {
+    font-weight: bold;
+    color: #111;
+    background: #fff3bf;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.verb-flow-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    padding: 6px 10px;
+    background: #ffffff;
+    border: 1px dashed #d97706;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.verb-flow-arrow {
+    color: #d97706;
+    font-weight: bold;
+}
+
+details {
+    width: 100%;
+}
+
+details summary {
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: #0078d4;
+    user-select: none;
+    line-height: 1.5;
+}
+
+details summary:hover {
+    color: #005a9e;
+}
+
+.detail-content {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #ccc;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    width: 100%;
+}
+
+.detail-content p {
+    margin: 10px 0;
+}
+
+.example-box {
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: #ffffff;
+    border-left: 4px solid #0078d4;
+    border-radius: 0 6px 6px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.example-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.example-en {
+    color: #1a1a1a;
+    font-weight: 500;
+    line-height: 1.4;
+    flex-grow: 1;
+}
+
+.example-voices {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.zh-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.zh-toggle-btn {
+    background: #e2e8f0;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+.zh-toggle-btn:hover {
+    background: #cbd5e1;
+    color: #1e293b;
+}
+
+.zh-text {
+    transition: opacity 0.2s ease;
+}
+
+.zh-text.hidden {
+    display: none !important;
+}
+
+.pos-tag {
+    font-size: 0.85rem;
+    color: #d9381e;
+    font-style: italic;
+    margin-left: 2px;
+}
+
+.phonetic-tag {
+    font-size: 0.85rem;
+    color: #555;
+    margin-left: 4px;
+}
+
+.category-badge {
+    display: inline-block;
+    background: #e1f5fe;
+    color: #0288d1;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.sync-status {
+    font-size: 0.85rem;
+    color: #0078d4;
+    font-weight: normal;
+    display: block;
+    margin-top: 4px;
+}
+
+.status-log-box {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-left: 4px solid #0078d4;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+}
+
+.status-log-box .log-item {
+    margin-bottom: 4px;
+    color: #495057;
+}
+
+.status-log-box .log-active {
+    color: #0078d4;
+    font-weight: bold;
+}
+
+.status-log-box .log-error {
+    color: #d9381e;
+}
+
+@media (min-width: 650px) {
+    body { padding: 20px; }
+    h1 { font-size: 1.8rem; }
+    .toolbar { flex-direction: row; justify-content: space-between; align-items: center; }
+    .filter-group { flex-direction: row; flex-grow: 1; }
+    .filter-group .search-input-wrap { width: auto; flex-grow: 1; }
+    .filter-group select { width: auto; }
+    .btn-group { display: flex; flex-wrap: wrap; width: auto; }
+    .btn-group button { width: auto; }
+    .sync-status { display: inline; margin-top: 0; margin-left: 10px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>📚 AI TOEIC 全方位單字學習系統</h1>
+
+    <div class="card api-box">
+        <details>
+            <summary>⚙️ 系統連線設定</summary>
+            <div style="margin-top:12px;">
+                <label><strong>🔑 Gemini API Key：</strong></label>
+                <input id="apiKeyInput" type="text" placeholder="貼上您的 Gemini API Key" onchange="saveSettings()">
+
+                <label><strong>☁️ Google Apps Script 雲端網址：</strong></label>
+                <input id="gasUrlInput" type="text" placeholder="輸入或修改 Google Apps Script URL" onchange="saveSettings()">
+
+                <div style="margin-top:8px;">
+                    <button class="primary btn-sm" onclick="saveSettings()">💾 儲存設定</button>
+                    <button class="secondary btn-sm" onclick="resetToDefault()">🔄 重置預設值</button>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <div class="card">
+        <input id="wordInput" placeholder="輸入英文單字（含動態變形、複數）或中文..." onkeydown="handleKeyDown(event)">
+        <div style="display:flex; gap:8px; margin-top:8px;">
+            <button id="searchBtn" class="primary" style="flex:2;" onclick="lookupWord()">🤖 Gemini 深入分析</button>
+            <button class="voice-female" style="flex:1;" onclick="speakText(null, 'female')">👩 女聲</button>
+            <button class="voice-male" style="flex:1;" onclick="speakText(null, 'male')">👨 男聲</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>AI 分析結果</h2>
+        <div id="result" style="color:#666;">請輸入單字或中文進行查詢</div>
+    </div>
+
+    <div class="card">
+        <h2>我的單字庫 <span id="wordCount" style="font-size:1rem; color:#666; font-weight:normal;">(0)</span> <span id="syncStatus" class="sync-status"></span></h2>
+        
+        <div class="stat-bar" id="statBar">
+            <span class="stat-badge due">🎯 待複習: <span id="statDue">0</span></span>
+            <span class="stat-badge learning">📖 學習中: <span id="statLearning">0</span></span>
+            <span class="stat-badge mastered">🏆 已精通: <span id="statMastered">0</span></span>
+        </div>
+
+        <div class="toolbar">
+            <div class="filter-group">
+                <div class="search-input-wrap">
+                    <input id="filterInput" placeholder="🔍 搜尋已儲存單字..." oninput="handleFilterInput()">
+                    <button id="clearSearchBtn" class="clear-search-btn" onclick="clearSearchFilter()">✖</button>
+                </div>
+                <select id="sortSelect" onchange="renderWordList()">
+                    <option value="time-desc" selected>⏱️ 時間 (最新 ➔ 最舊)</option>
+                    <option value="time-asc">⏱️ 時間 (最舊 ➔ 最新)</option>
+                    <option value="srs-level-asc">⭐ 熟練度 (低 ➔ 高)</option>
+                    <option value="srs-level-desc">⭐ 熟練度 (高 ➔ 低)</option>
+                    <option value="alpha-asc">🔤 字母順序 (A ➔ Z)</option>
+                    <option value="alpha-desc">🔤 字母順序 (Z ➔ A)</option>
+                    <option value="srs-due">🎯 依複習緊急度（待複習優先）</option>
+                </select>
+            </div>
+
+            <div class="btn-group">
+                <button id="filterDueBtn" class="warning" onclick="toggleDueOnlyFilter()">🎯 今日待複習 (<span id="dueCount">0</span>)</button>
+                <button class="primary" onclick="fetchCloudWords()">☁️ 從雲端拉取</button>
+                <button id="upgradeBtn" class="primary" onclick="upgradeOldWords(event)">🔄 批次補齊舊單字</button>
+                <button class="secondary" onclick="toggleAllDetails(true)">📂 全部展開</button>
+                <button class="secondary" onclick="toggleAllDetails(false)">📁 全部折疊</button>
+                <button class="secondary" onclick="toggleAllTranslations()">👁️ 切換所有翻譯</button>
+                <button class="secondary" onclick="exportData()">💾 匯出 JSON</button>
+                <button class="secondary" onclick="document.getElementById('fileInput').click()">📥 匯入 JSON</button>
+                <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
+            </div>
+        </div>
+
+        <div id="wordList"></div>
+    </div>
+</div>
+
+<script>
+// 已更新為指定的預設 Google Apps Script 雲端網址
+const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbxizcNOMuevWkwV2VCMmFLLMRFGL0LdenRRUoJcPceYYzZKrSn1Cb7b125-zfwPl1Tr/exec";
+const DEFAULT_API_KEY = "AQ.Ab8RN6J_GVyCO33bkhlpNOILFBtYcXotjVHlbtStygXrx0GImA";
+
+// SRS 間隔天數對照表 (Level 0 ~ 5)
+const SRS_INTERVALS = [0, 1, 3, 7, 14, 30];
+
+let filterDueOnly = false;
+
+function getApiKey() {
+    return localStorage.getItem("gemini_api_key") || DEFAULT_API_KEY;
+}
+
+function getGasUrl() {
+    return localStorage.getItem("gas_script_url") || DEFAULT_GAS_URL;
+}
+
+function saveSettings() {
+    const key = document.getElementById("apiKeyInput").value.trim();
+    const gasUrl = document.getElementById("gasUrlInput").value.trim();
+
+    localStorage.setItem("gemini_api_key", key);
+    localStorage.setItem("gas_script_url", gasUrl);
+    alert("✅ 連線設定已儲存！");
+}
+
+function resetToDefault() {
+    if (confirm("確定要恢復預設網址與金鑰設定嗎？")) {
+        localStorage.removeItem("gemini_api_key");
+        localStorage.removeItem("gas_script_url");
+        document.getElementById("apiKeyInput").value = DEFAULT_API_KEY;
+        document.getElementById("gasUrlInput").value = DEFAULT_GAS_URL;
+        alert("🔄 已成功重置設定！");
+    }
+}
+
+document.getElementById("apiKeyInput").value = getApiKey();
+document.getElementById("gasUrlInput").value = getGasUrl();
+
+let currentResultData = null;
+
+function escapeJsStr(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, ' ');
+}
+
+function toggleZh(btn) {
+    const container = btn.closest('.zh-wrapper');
+    if (!container) return;
+    const textEl = container.querySelector('.zh-text');
+    if (!textEl) return;
+
+    const isHidden = textEl.classList.contains('hidden');
+    if (isHidden) {
+        textEl.classList.remove('hidden');
+        btn.innerHTML = '🙈 隱藏';
+    } else {
+        textEl.classList.add('hidden');
+        btn.innerHTML = '👁️ 翻譯';
+    }
+}
+
+function toggleAllTranslations() {
+    const allTextEls = document.querySelectorAll('.zh-text');
+    const hasHidden = Array.from(allTextEls).some(el => el.classList.contains('hidden'));
+
+    document.querySelectorAll('.zh-wrapper').forEach(container => {
+        const btn = container.querySelector('.zh-toggle-btn');
+        const textEl = container.querySelector('.zh-text');
+        if (btn && textEl) {
+            if (hasHidden) {
+                textEl.classList.remove('hidden');
+                btn.innerHTML = '🙈 隱藏';
+            } else {
+                textEl.classList.add('hidden');
+                btn.innerHTML = '👁️ 翻譯';
+            }
+        }
+    });
+}
+
+function sanitizeWord(word) {
+    if (!word || typeof word !== 'string') return word;
+    word = word.trim();
+
+    if (/^[A-Z0-9\-\.\s]{2,}$/.test(word) && word === word.toUpperCase()) {
+        return word;
+    }
+
+    const properNouns = [
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
+        "taiwan", "japan", "america", "english", "chinese"
+    ];
+
+    if (properNouns.includes(word.toLowerCase())) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }
+
+    return word.toLowerCase();
+}
+
+function checkAndFixDatabaseWords(words) {
+    let fixCount = 0;
+    const fixedWords = words.map(item => {
+        if (!item) return item;
+        let updated = false;
+        let cleanedWord = item.word;
+
+        if (item.word) {
+            cleanedWord = sanitizeWord(item.word);
+            if (cleanedWord !== item.word) updated = true;
+        }
+
+        const mastery = typeof item.mastery === 'number' ? item.mastery : 0;
+        const nextReviewDate = typeof item.nextReviewDate === 'number' ? item.nextReviewDate : 0;
+        const lastReviewedAt = typeof item.lastReviewedAt === 'number' ? item.lastReviewedAt : 0;
+
+        if (updated || item.mastery === undefined) {
+            fixCount++;
+            return {
+                ...item,
+                word: cleanedWord,
+                mastery: mastery,
+                nextReviewDate: nextReviewDate,
+                lastReviewedAt: lastReviewedAt
+            };
+        }
+        return item;
+    });
+
+    if (fixCount > 0) {
+        saveWords(fixedWords);
+    }
+    return fixedWords;
+}
+
+if (typeof speechSynthesis !== 'undefined') {
+    speechSynthesis.onvoiceschanged = () => {
+        speechSynthesis.getVoices();
+    };
+}
+
+function speakText(textInput, gender = 'female') {
+    const text = textInput || (currentResultData ? currentResultData.word : document.getElementById("wordInput").value);
+    if (!text || typeof speechSynthesis === 'undefined') return;
+
+    speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+
+    const voices = speechSynthesis.getVoices();
+    const enVoices = voices.filter(v => v.lang.startsWith('en'));
+
+    const maleKeywords = ['guyonline', 'guy natural', 'evan', 'nathan', 'alex', 'david', 'fred', 'george', 'daniel', 'mark', 'james', 'brian', 'male'];
+
+    let targetVoice = null;
+
+    if (gender === 'male') {
+        targetVoice = enVoices.find(v => maleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+        if (targetVoice) {
+            utterance.voice = targetVoice;
+            utterance.pitch = 1.0;
+            utterance.rate = 0.9;
+        } else {
+            utterance.pitch = 0.55; 
+            utterance.rate = 0.82;
+        }
+    } else {
+        targetVoice = enVoices.find(v => ['jennyonline', 'ariaonline', 'samantha', 'zira', 'victoria', 'karen', 'female'].some(kw => v.name.toLowerCase().includes(kw)));
+        if (targetVoice) utterance.voice = targetVoice;
+        utterance.pitch = 1.0;
+        utterance.rate = 0.9;
+    }
+
+    speechSynthesis.speak(utterance);
+}
+
+function getWords() {
+    const raw = JSON.parse(localStorage.getItem("vocabDB") || "[]");
+    return raw;
+}
+
+async function saveWords(words) {
+    localStorage.setItem("vocabDB", JSON.stringify(words));
+    renderWordList();
+
+    const gasUrl = getGasUrl();
+    if (gasUrl) {
+        const syncStatus = document.getElementById("syncStatus");
+        if (syncStatus) syncStatus.textContent = "☁️ 雲端同步中...";
+        try {
+            await fetch(gasUrl, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ words: words })
+            });
+            if (syncStatus) syncStatus.textContent = "✅ 已同步至 Google 雲端";
+        } catch (err) {
+            console.error("雲端同步失敗:", err);
+            if (syncStatus) syncStatus.textContent = "⚠️ 雲端同步失敗（本地已儲存）";
+        }
+    }
+}
+
+async function fetchCloudWords() {
+    const gasUrl = getGasUrl();
+    if (!gasUrl) return;
+
+    const syncStatus = document.getElementById("syncStatus");
+    if (syncStatus) syncStatus.textContent = "⏳ 正在讀取雲端資料...";
+
+    try {
+        const res = await fetch(gasUrl);
+        const text = await res.text();
+        
+        if (text.trim().startsWith("<")) {
+            throw new Error("雲端網址回傳了 HTML 頁面，請確認 Apps Script 部署網址是否正確。");
+        }
+
+        let cloudWords = JSON.parse(text);
+        if (Array.isArray(cloudWords)) {
+            cloudWords = checkAndFixDatabaseWords(cloudWords);
+            localStorage.setItem("vocabDB", JSON.stringify(cloudWords));
+            renderWordList();
+            if (syncStatus) syncStatus.textContent = "✅ 已成功載入雲端最新資料！";
+        } else {
+            throw new Error("雲端資料格式不符");
+        }
+    } catch (err) {
+        console.error("讀取雲端資料失敗:", err);
+        if (syncStatus) syncStatus.textContent = "❌ 讀取雲端資料失敗";
+    }
+}
+
+function handleKeyDown(event) {
+    if (event.key === "Enter") {
+        lookupWord();
+    }
+}
+
+function safeJSONParse(rawText) {
+    if (!rawText) throw new Error("AI 回傳空白內容");
+
+    let jsonText = rawText.trim();
+    jsonText = jsonText.replace(/^```json\s*/i, '').replace(/^```html\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    if (jsonText.startsWith("<")) {
+        throw new Error("AI 回傳了 HTML 內容而非 JSON，請重新發送查詢。");
+    }
+
+    try {
+        return JSON.parse(jsonText);
+    } catch (e1) {
+        console.warn("直接解析失敗，嘗試清理語法...", e1);
+    }
+
+    try {
+        let cleaned = jsonText
+            .replace(/,\s*([}\]])/g, '$1')
+            .replace(/[\u0000-\u001F]+/g, " ");
+
+        return JSON.parse(cleaned);
+    } catch (e2) {
+        console.error("JSON 修復失敗:", e2);
+        throw new Error("AI 回傳語法格式有誤，請再點擊一次查詢。");
+    }
+}
+
+async function fetchGeminiAPI(prompt, onLog) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        throw new Error("請先點擊上方「⚙️ 系統連線設定」輸入您的 Gemini API Key！");
+    }
+
+    const log = (msg, isError = false) => {
+        if (onLog) onLog(msg, isError);
+    };
+
+    log("🔍 步驟 1/3：向 Google 查詢當前可用的 AI 模型列表...");
+    let candidateModels = [];
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (listRes.ok) {
+            const listData = await listRes.json();
+            if (listData.models && Array.isArray(listData.models)) {
+                candidateModels = listData.models
+                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+                    .map(m => m.name.replace(/^models\//, ''));
+                log(`✅ 已取得可用模型清單 (${candidateModels.length} 個)`);
+            }
+        }
+    } catch (e) {
+        log(`⚠️ 無法自動獲取清單，切換至預設備用模型機制...`);
+    }
+
+    if (candidateModels.length === 0) {
+        candidateModels = [
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-pro",
+            "gemini-pro"
+        ];
+    } else {
+        candidateModels.sort((a, b) => {
+            if (a.includes('2.0') && !b.includes('2.0')) return -1;
+            if (!a.includes('2.0') && b.includes('2.0')) return 1;
+            if (a.includes('flash') && !b.includes('flash')) return -1;
+            if (!a.includes('flash') && b.includes('flash')) return 1;
+            return 0;
+        });
+    }
+
+    log(`🚀 步驟 2/3：開始依序嘗試連線模型 (${candidateModels.slice(0,3).join(', ')}...)`);
+
+    let lastError = null;
+
+    for (let i = 0; i < candidateModels.length; i++) {
+        const model = candidateModels[i];
+        const endpoints = [
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                log(`⏳ 嘗試模型 [${model}] 分析中... (限制 12 秒回應)`);
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { response_mime_type: "application/json" }
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                const responseText = await response.text();
+
+                if (responseText.trim().startsWith("<")) {
+                    lastError = `[${model}] 回傳 HTML 頁面而非 JSON`;
+                    log(`⚠️ ${lastError}，切換下一個模型...`, true);
+                    continue;
+                }
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    lastError = `[${model}] 回應內容格式異常`;
+                    log(`⚠️ ${lastError}，切換下一個模型...`, true);
+                    continue;
+                }
+
+                if (response.ok && data.candidates && data.candidates[0]) {
+                    log(`🎉 步驟 3/3：成功從 [${model}] 取得完整分析數據！完成中...`);
+                    return data;
+                }
+
+                if (data.error) {
+                    lastError = `[${model}] ${data.error.message}`;
+                    log(`⚠️ 連線未成功：${data.error.message}，嘗試下一個...`, true);
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    lastError = `[${model}] 連線回應超時 (超過 12 秒)`;
+                    log(`⏱️ ${lastError}，自動放棄並切換下一個模型...`, true);
+                } else {
+                    lastError = err.message;
+                    log(`❌ [${model}] 連線錯誤: ${err.message}`, true);
+                }
+            }
+        }
+    }
+
+    throw new Error(lastError || "無法連線至 Gemini API，請檢查 API Key 是否正確或網路連線狀態。");
+}
+
+async function lookupWord() {
+    const wordInput = document.getElementById("wordInput").value.trim();
+    const searchBtn = document.getElementById("searchBtn");
+
+    if (!wordInput) {
+        alert("請輸入單字或中文");
+        return;
+    }
+
+    const resultDiv = document.getElementById("result");
+    searchBtn.disabled = true;
+
+    let logs = [];
+    const renderLogs = () => {
+        resultDiv.innerHTML = `
+            <div class="status-log-box">
+                <div style="font-weight:bold; margin-bottom:8px; color:#0078d4;">🔄 AI 分析即時狀態：</div>
+                ${logs.map((l, idx) => `
+                    <div class="log-item ${idx === logs.length - 1 ? 'log-active' : ''} ${l.isError ? 'log-error' : ''}">
+                        ${l.msg}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    };
+
+    const addLog = (msg, isError = false) => {
+        logs.push({ msg, isError });
+        renderLogs();
+    };
+
+    addLog(`開始分析單字："${wordInput}"`);
+
+    const prompt = `你是一位專業的 TOEIC 英文教學專家。請分析使用者輸入的詞彙："${wordInput}"。
+如果輸入的是中文，請找出最適合多益 (TOEIC) 考試對應的核心英文單字，並填入 "word" 欄位；如果輸入的是英文，則直接使用該英文單字。
+
+⚠️ 重要規範：
+1. 必須回覆嚴格標準合法 JSON 格式。
+2. "word" 欄位的大寫規範：除了全大寫縮寫 (如 CEO, VIP) 或專有名詞 (如 Taiwan, Monday) 外，一般普通單字請務必一律使用【全小寫】（例如：employee 而非 Employee）。
+3. 仔細判定使用者輸入的英文單字屬於何種【詞態與文法形態】（例如：規則名詞複數、不規則複數、規則動詞過去式/過去分詞、不規則動詞三態、單複數同形、原形等）。
+   - 若為不規則動詞三態，請在 grammaticalForm 標註「三態變化（原形 ➔ 過去式 ➔ 過去分詞）」，如「三態變化（go ➔ went ➔ gone）」。
+   - 若為不規則名詞複數，請標註「名詞原形（複數：children）」。
+   - 若為單複數同形，請標註「單複數同形：名詞原形（複數：sheep）」。
+
+請包含以下極為完整的單字資訊：
+{
+ "word": "對應的英文單字 (一般單字必須全小寫)",
+ "grammaticalForm": "單字的詞態與文法形態分析（例如：規則動詞（過去式：walked | 過去分詞：walked）、名詞原形（複數：computers）、名詞原形（複數：children）、三態變化（go ➔ went ➔ gone）、單複數同形（複數：sheep）等）",
+ "phonetic": "KK 音標 (例如：/rɪˈspon.sə.bəl/)",
+ "partOfSpeech": "詞性縮寫 (例如：n., v., adj., adv.)",
+ "chinese": "中文繁體翻譯",
+ "category": "多益情境領域",
+ "toeic": "多益常考情境與解題重點陷阱說明",
+ "derivatives": ["衍生字與詞性1", "衍生字與詞性2"],
+ "collocations": ["常見搭配詞1", "常見搭配詞2"],
+ "synonyms": ["同義字1", "同義字2"],
+ "antonyms": ["反義字1", "反義字2"],
+ "confusables": ["易混淆字與區分提示"],
+ "example1_en": "英文例句 1 (純英文)",
+ "example1_zh": "英文例句 1 的中文繁體翻譯 (不要加括號)",
+ "example2_en": "英文例句 2 (純英文)",
+ "example2_zh": "英文例句 2 的中文繁體翻譯 (不要加括號)"
+}`;
+
+    try {
+        const data = await fetchGeminiAPI(prompt, addLog);
+        const rawText = data.candidates[0].content.parts[0].text;
+        
+        currentResultData = safeJSONParse(rawText);
+        
+        if (currentResultData && currentResultData.word) {
+            currentResultData.word = sanitizeWord(currentResultData.word);
+        }
+
+        resultDiv.innerHTML = renderCardHTML(currentResultData, true);
+
+    } catch (error) {
+        console.error(error);
+        resultDiv.innerHTML = `
+            <div style="color:red; line-height: 1.6; padding:10px; background:#fff0f0; border:1px solid #ffcdd2; border-radius:6px;">
+                ❌ <strong>查詢失敗或連線中斷：</strong><br>${error.message}
+            </div>`;
+    } finally {
+        searchBtn.disabled = false;
+    }
+}
+
+function formatExampleHTML(enText, zhText, legacyText) {
+    let en = enText || "";
+    let zh = zhText || "";
+
+    if (!en && legacyText) {
+        const match = legacyText.match(/^(.*?)[（\(](.*?)[）\)]\s*$/);
+        if (match) {
+            en = match[1].trim();
+            zh = match[2].trim();
+        } else {
+            en = legacyText.trim();
+        }
+    }
+
+    if (!en && !zh) return "-";
+
+    const safeEn = escapeJsStr(en);
+
+    let html = `
+        <div class="example-box">
+            <div class="example-header">
+                <div class="example-en">${en}</div>
+                <div class="example-voices">
+                    <button class="voice-female btn-xs" onclick="speakText('${safeEn}', 'female')">👩 女聲</button>
+                    <button class="voice-male btn-xs" onclick="speakText('${safeEn}', 'male')">👨 男聲</button>
+                </div>
+            </div>`;
+    
+    if (zh) {
+        const cleanZh = zh.replace(/^[（\(]\s*/, '').replace(/\s*[）\)]$/, '');
+        html += `
+            <div class="zh-wrapper" style="margin-top: 6px; border-top: 1px dotted #eee; padding-top: 4px; font-size: 0.92rem;">
+                <button class="zh-toggle-btn" onclick="toggleZh(this)">👁️ 翻譯</button>
+                <span class="zh-text hidden" style="color: #555;">${cleanZh}</span>
+            </div>`;
+    }
+    
+    html += `</div>`;
+    return html;
+}
+
+// 條件式高亮與詞性形態渲染函數
+function renderGrammaticalForm(formText) {
+    if (!formText || formText === '-') return '-';
+
+    let isIrregularVerb = formText.includes("不規則動詞") || formText.includes("三態變化") || formText.includes("➔");
+    let isIrregularNoun = formText.includes("不規則名詞") || formText.includes("【不規則】") || formText.includes("不規則");
+    let isSameForm = formText.includes("單複數同形");
+
+    let badgeHTML = "";
+    if (isIrregularVerb) {
+        badgeHTML = `<span class="alert-badge badge-irregular-verb">🔥 不規則動詞</span>`;
+    } else if (isSameForm) {
+        badgeHTML = `<span class="alert-badge badge-same-form">💡 單複數同形</span>`;
+    } else if (isIrregularNoun) {
+        badgeHTML = `<span class="alert-badge badge-irregular-noun">⚠️ 不規則</span>`;
+    }
+
+    // 處理三態變化橫向展繪 (例如 go ➔ went ➔ gone)
+    if (isIrregularVerb && formText.includes("➔")) {
+        const parts = formText.split(/[\(（]/);
+        const prefix = parts[0].trim();
+        const flowPart = parts[1] ? parts[1].replace(/[\)）]/, '').replace("三態變化：", "").trim() : "";
+
+        if (flowPart && flowPart.includes("➔")) {
+            const verbSteps = flowPart.split("➔").map(s => s.trim());
+            const flowHTML = verbSteps.map((step, idx) => {
+                const isHighlight = idx > 0; // 過去式與過去分詞加粗強調
+                return `<span class="${isHighlight ? 'irregular-highlight' : ''}">${step}</span>`;
+            }).join(' <span class="verb-flow-arrow">➔</span> ');
+
+            return `
+                <span>${prefix} ${badgeHTML}</span>
+                <div class="verb-flow-box">
+                    <span style="font-size:0.82rem; color:#666;">三態流程：</span>
+                    ${flowHTML}
+                </div>
+            `;
+        }
+    }
+
+    // 處理文字加粗 (例如 **children**)
+    let formattedText = formText.replace(/\*\*(.*?)\*\*/g, '<span class="irregular-highlight">$1</span>');
+
+    return `<span>${formattedText} ${badgeHTML}</span>`;
+}
+
+function renderCardHTML(item, isSearchResult = false) {
+    const displayWord = sanitizeWord(item.word);
+    const posText = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
+    const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
+    const categoryBadge = item.category ? `<span class="category-badge">🏷️ ${item.category}</span>` : '';
+
+    const derivativesList = Array.isArray(item.derivatives) && item.derivatives.length ? item.derivatives.join("； ") : "-";
+    const collocationsList = Array.isArray(item.collocations) && item.collocations.length ? item.collocations.join("； ") : "-";
+    const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : "-";
+    const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : "-";
+    const confusablesList = Array.isArray(item.confusables) && item.confusables.length ? item.confusables.join("； ") : "-";
+
+    const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1);
+    const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2);
+    const formHTML = renderGrammaticalForm(item.grammaticalForm);
+
+    return `
+        <div class="word-card">
+            <div style="font-size:1.1rem; font-weight:bold; color:#0078d4; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <span>${displayWord}</span> ${posText} ${phoneticText}
+                <span class="zh-wrapper">
+                    <button class="zh-toggle-btn" onclick="toggleZh(this)">👁️ 翻譯</button>
+                    <span class="zh-text hidden" style="font-weight:normal; color:#555;">[${item.chinese}]</span>
+                </span>
+                <div>${categoryBadge}</div>
+            </div>
+            <div class="detail-content" style="border-top:1px dashed #eee; margin-top:8px;">
+                <p><strong>📌 詞性形態：</strong>${formHTML}</p>
+                <p><strong>💡 多益考點：</strong>${item.toeic || '-'}</p>
+                <p><strong>🌱 衍生字族：</strong>${derivativesList}</p>
+                <p><strong>🔗 常用搭配：</strong>${collocationsList}</p>
+                <p><strong>⚠️ 易混淆字：</strong>${confusablesList}</p>
+                <p><strong>🔄 同義 / ↔️ 反義：</strong>同義: ${synonymsList} ｜ 反義: ${antonymsList}</p>
+                <p><strong>📝 例句 1：</strong>${ex1HTML}</p>
+                <p><strong>📝 例句 2：</strong>${ex2HTML}</p>
+            </div>
+            ${isSearchResult ? `<button class="primary" style="width:100%; margin-top:10px;" onclick="addCurrentToList()">➕ 保存到我的單字庫 (自動同步雲端)</button>` : ''}
+        </div>
+    `;
+}
+
+async function addCurrentToList() {
+    if (!currentResultData) return;
+
+    currentResultData.word = sanitizeWord(currentResultData.word);
+
+    const words = getWords();
+    const existingIndex = words.findIndex(w => w.word.toLowerCase() === currentResultData.word.toLowerCase());
+
+    const now = Date.now();
+    const newWordObj = {
+        ...currentResultData,
+        mastery: 0,
+        nextReviewDate: now,
+        lastReviewedAt: 0,
+        createdAt: now
+    };
+
+    if (existingIndex !== -1) {
+        const confirmOverwrite = confirm(
+            `單字「${words[existingIndex].word}」已存在於單字庫中！\n\n是否要以最新的完整 AI 分析資訊覆蓋更新原本的記錄？`
+        );
+
+        if (confirmOverwrite) {
+            words[existingIndex] = {
+                ...words[existingIndex],
+                ...newWordObj,
+                createdAt: words[existingIndex].createdAt || now,
+                updatedAt: now
+            };
+            await saveWords(words);
+            alert(`✅ 單字「${currentResultData.word}」已成功覆蓋更新並同步雲端！`);
+        }
+        return;
+    }
+
+    words.unshift(newWordObj);
+    await saveWords(words);
+    alert("✅ 已成功儲存到單字庫並同步至雲端！");
+}
+
+async function markMastery(realIndex, isRemembered) {
+    const words = getWords();
+    const item = words[realIndex];
+    if (!item) return;
+
+    let currentLevel = item.mastery || 0;
+    
+    if (isRemembered) {
+        currentLevel = Math.min(currentLevel + 1, 5);
+    } else {
+        currentLevel = 0;
+    }
+
+    const intervalDays = SRS_INTERVALS[currentLevel];
+    const now = Date.now();
+    const nextDate = isRemembered ? (now + intervalDays * 24 * 60 * 60 * 1000) : now;
+
+    words[realIndex] = {
+        ...item,
+        mastery: currentLevel,
+        nextReviewDate: nextDate,
+        lastReviewedAt: now
+    };
+
+    await saveWords(words);
+}
+
+function toggleDueOnlyFilter() {
+    filterDueOnly = !filterDueOnly;
+    const btn = document.getElementById("filterDueBtn");
+    if (filterDueOnly) {
+        btn.classList.remove("warning");
+        btn.classList.add("primary");
+        btn.innerHTML = `🎯 顯示全部單字`;
+    } else {
+        btn.classList.remove("primary");
+        btn.classList.add("warning");
+    }
+    renderWordList();
+}
+
+function handleFilterInput() {
+    const filterInput = document.getElementById("filterInput");
+    const clearBtn = document.getElementById("clearSearchBtn");
+    if (filterInput && clearBtn) {
+        clearBtn.style.display = filterInput.value.trim() ? "block" : "none";
+    }
+    renderWordList();
+}
+
+function clearSearchFilter() {
+    const filterInput = document.getElementById("filterInput");
+    const clearBtn = document.getElementById("clearSearchBtn");
+    if (filterInput) filterInput.value = "";
+    if (clearBtn) clearBtn.style.display = "none";
+    renderWordList();
+}
+
+async function updateSingleWord(index, btnEvt) {
+    const words = getWords();
+    const item = words[index];
+    if (!item) return;
+
+    const cleanWord = sanitizeWord(item.word);
+
+    if (!confirm(`確定要請 AI 重新分析單字「${cleanWord}」嗎？`)) {
+        return;
+    }
+
+    const btn = btnEvt ? btnEvt.target : null;
+    let oldBtnText = "";
+    if (btn) {
+        oldBtnText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = "⏳ 更新中...";
+    }
+
+    try {
+        const prompt = `你是一位專業的 TOEIC 英文教學專家。請分析英文單字："${cleanWord}"。
+⚠️ 重要規範：
+1. 必須回覆嚴格標準合法 JSON 格式。
+2. "word" 欄位除全大寫縮寫或專有名詞外，普通單字請務必使用【全小寫】。
+3. 判斷 "grammaticalForm" 欄位（詞態與文法形態分析，特別標註規則變化、不規則變化或單複數同形）。
+
+請包含以下極為完整的單字資訊：
+{
+ "word": "${cleanWord}",
+ "grammaticalForm": "單字形態與詞性分析（例如：規則動詞（過去式：walked | 過去分詞：walked）、名詞原形（複數：computers）、名詞原形（複數：children）、三態變化（go ➔ went ➔ gone）、單複數同形（複數：sheep）等）",
+ "phonetic": "KK 音標 (例如：/rɪˈspon.sə.bəl/)",
+ "partOfSpeech": "詞性縮寫 (例如：n., v., adj., adv.)",
+ "chinese": "${item.chinese || '中文翻譯'}",
+ "category": "多益情境領域",
+ "toeic": "多益常考情境與解題重點陷阱說明",
+ "derivatives": ["衍生字與詞性1", "衍生字與詞性2"],
+ "collocations": ["常見搭配詞1", "常見搭配詞2"],
+ "synonyms": ["同義字1", "同義字2"],
+ "antonyms": ["反義字1", "反義字2"],
+ "confusables": ["易混淆字與區分提示"],
+ "example1_en": "英文例句 1 (純英文)",
+ "example1_zh": "英文例句 1 的中文繁體翻譯 (不要加括號)",
+ "example2_en": "英文例句 2 (純英文)",
+ "example2_zh": "英文例句 2 的中文繁體翻譯 (不要加括號)"
+}`;
+
+        const data = await fetchGeminiAPI(prompt);
+        const rawText = data.candidates[0].content.parts[0].text;
+        const newInfo = safeJSONParse(rawText);
+
+        if (newInfo && newInfo.word) {
+            newInfo.word = sanitizeWord(newInfo.word);
+        }
+
+        words[index] = {
+            ...item,
+            ...newInfo,
+            createdAt: item.createdAt || Date.now(),
+            updatedAt: Date.now()
+        };
+
+        await saveWords(words);
+        alert(`✅ 單字「${cleanWord}」已成功更新完畢！`);
+
+    } catch (err) {
+        console.error(`更新單字 [${cleanWord}] 失敗:`, err);
+        alert(`❌ 更新失敗：${err.message}`);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = oldBtnText;
+        }
+    }
+}
+
+function isWordIncomplete(item) {
+    if (!item) return true;
+    const isEmptyStr = (val) => !val || typeof val !== 'string' || val.trim() === '' || val.trim() === '-';
+    const isEmptyArr = (val) => !Array.isArray(val) || val.length === 0;
+
+    const hasEx1Zh = item.example1_zh || (item.example1 && item.example1.includes('(')) || (item.example1 && item.example1.includes('（'));
+
+    return (
+        isEmptyStr(item.partOfSpeech) ||
+        isEmptyStr(item.phonetic) ||
+        isEmptyStr(item.category) ||
+        isEmptyStr(item.toeic) ||
+        isEmptyStr(item.grammaticalForm) ||
+        isEmptyArr(item.derivatives) ||
+        isEmptyArr(item.collocations) ||
+        isEmptyArr(item.confusables) ||
+        !hasEx1Zh
+    );
+}
+
+async function upgradeOldWords(evt) {
+    const words = getWords();
+    if (words.length === 0) {
+        alert("單字庫目前是空的。");
+        return;
+    }
+
+    const outdatedIndices = [];
+    words.forEach((item, index) => {
+        if (isWordIncomplete(item)) {
+            outdatedIndices.push(index);
+        }
+    });
+
+    if (outdatedIndices.length === 0) {
+        alert("🎉 您的單字庫中所有單字都已經擁有完整資訊！");
+        return;
+    }
+
+    if (!confirm(`檢測到有 ${outdatedIndices.length} 個單字資訊尚不完整或缺乏形態分析。\n是否開始自動補齊完整內容？`)) return;
+
+    let successCount = 0;
+    let failedWords = [];
+    const searchBtn = document.getElementById("searchBtn");
+    const upgradeBtn = document.getElementById("upgradeBtn") || (evt ? evt.currentTarget : null);
+    const syncStatus = document.getElementById("syncStatus");
+
+    if (searchBtn) searchBtn.disabled = true;
+    if (upgradeBtn) upgradeBtn.disabled = true;
+
+    for (let i = 0; i < outdatedIndices.length; i++) {
+        const idx = outdatedIndices[i];
+        const item = words[idx];
+        const cleanWord = sanitizeWord(item.word);
+
+        const progressText = `⏳ 補齊中 (${i + 1}/${outdatedIndices.length}): ${cleanWord}`;
+        if (upgradeBtn) upgradeBtn.innerHTML = progressText;
+        if (syncStatus) syncStatus.textContent = progressText;
+
+        try {
+            if (i > 0) {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
+            const prompt = `你是一位專業的 TOEIC 英文教學專家。請分析英文單字："${cleanWord}"。
+⚠️ 重要規範：
+1. 必須回覆嚴格標準合法 JSON 格式。
+2. "word" 欄位除全大寫縮寫或專有名詞外，普通單字請務必使用【全小寫】。
+3. 判斷 "grammaticalForm" 欄位（詞態與文法形態分析，特別標註規則變化、不規則變化或單複數同形）。
+
+請包含以下極為完整的單字資訊：
+{
+ "word": "${cleanWord}",
+ "grammaticalForm": "單字形態與詞性分析（例如：規則動詞（過去式：walked | 過去分詞：walked）、名詞原形（複數：computers）、名詞原形（複數：children）、三態變化（go ➔ went ➔ gone）、單複數同形（複數：sheep）等）",
+ "phonetic": "KK 音標 (例如：/rɪˈspon.sə.bəl/)",
+ "partOfSpeech": "詞性縮寫 (例如：n., v., adj., adv.)",
+ "chinese": "${item.chinese || '中文翻譯'}",
+ "category": "多益情境領域",
+ "toeic": "多益常考情境與解題重點陷阱說明",
+ "derivatives": ["衍生字與詞性1", "衍生字與詞性2"],
+ "collocations": ["常見搭配詞1", "常見搭配詞2"],
+ "synonyms": ["同義字1", "同義字2"],
+ "antonyms": ["反義字1", "反義字2"],
+ "confusables": ["易混淆字與區分提示"],
+ "example1_en": "英文例句 1 (純英文)",
+ "example1_zh": "英文例句 1 的中文繁體翻譯 (不要加括號)",
+ "example2_en": "英文例句 2 (純英文)",
+ "example2_zh": "英文例句 2 的中文繁體翻譯 (不要加括號)"
+}`;
+
+            const data = await fetchGeminiAPI(prompt);
+            const rawText = data.candidates[0].content.parts[0].text;
+            const newInfo = safeJSONParse(rawText);
+
+            if (newInfo && newInfo.word) {
+                newInfo.word = sanitizeWord(newInfo.word);
+            }
+
+            words[idx] = {
+                ...item,
+                ...newInfo,
+                createdAt: item.createdAt || Date.now(),
+                updatedAt: Date.now()
+            };
+
+            successCount++;
+            await saveWords(words);
+
+        } catch (err) {
+            console.error(`補齊單字 [${cleanWord}] 失敗:`, err);
+            failedWords.push(cleanWord);
+        }
+    }
+
+    if (searchBtn) searchBtn.disabled = false;
+    if (upgradeBtn) {
+        upgradeBtn.disabled = false;
+        upgradeBtn.innerHTML = "🔄 批次補齊舊單字";
+    }
+
+    if (failedWords.length === 0) {
+        if (syncStatus) syncStatus.textContent = "✅ 已成功補齊所有單字資訊！";
+        alert(`🎉 補全作業完成！成功為 ${successCount} 個單字補齊完整資訊。`);
+    } else {
+        if (syncStatus) syncStatus.textContent = `⚠️ 補齊完成，有 ${failedWords.length} 個單字失敗`;
+        alert(`⚠️ 補全作業結束：\n✅ 成功：${successCount} 個\n❌ 失敗：${failedWords.length} 個（${failedWords.join(', ')}）`);
+    }
+}
+
+function renderWordList() {
+    let words = getWords();
+    words = checkAndFixDatabaseWords(words);
+
+    const now = Date.now();
+    const filterText = document.getElementById("filterInput") ? document.getElementById("filterInput").value.toLowerCase().trim() : "";
+    const sortType = document.getElementById("sortSelect") ? document.getElementById("sortSelect").value : "time-desc";
+    const wordListDiv = document.getElementById("wordList");
+    const countSpan = document.getElementById("wordCount");
+    const dueCountSpan = document.getElementById("dueCount");
+
+    const dueWordsList = words.filter(item => !item.nextReviewDate || item.nextReviewDate <= now);
+    const learningWords = words.filter(item => (item.mastery || 0) > 0 && (item.mastery || 0) < 5);
+    const masteredWords = words.filter(item => (item.mastery || 0) === 5);
+
+    if (dueCountSpan) dueCountSpan.textContent = dueWordsList.length;
+
+    const statDue = document.getElementById("statDue");
+    const statLearning = document.getElementById("statLearning");
+    const statMastered = document.getElementById("statMastered");
+    if (statDue) statDue.textContent = dueWordsList.length;
+    if (statLearning) statLearning.textContent = learningWords.length;
+    if (statMastered) statMastered.textContent = masteredWords.length;
+
+    let filteredWords = words.filter(item => {
+        const matchesQuery = item.word.toLowerCase().includes(filterText) || 
+                            (item.chinese && item.chinese.toLowerCase().includes(filterText));
+        
+        if (filterDueOnly) {
+            const isDue = !item.nextReviewDate || item.nextReviewDate <= now;
+            return matchesQuery && isDue;
+        }
+        return matchesQuery;
+    });
+
+    filteredWords.sort((a, b) => {
+        const timeA = a.updatedAt || a.createdAt || 0;
+        const timeB = b.updatedAt || b.createdAt || 0;
+        const wordA = a.word.toLowerCase();
+        const wordB = b.word.toLowerCase();
+
+        const dueA = !a.nextReviewDate || a.nextReviewDate <= now;
+        const dueB = !b.nextReviewDate || b.nextReviewDate <= now;
+
+        const levelA = a.mastery || 0;
+        const levelB = b.mastery || 0;
+
+        if (sortType === "srs-due") {
+            if (dueA && !dueB) return -1;
+            if (!dueA && dueB) return 1;
+            return (a.nextReviewDate || 0) - (b.nextReviewDate || 0);
+        }
+        if (sortType === "srs-level-asc") return levelA - levelB;
+        if (sortType === "srs-level-desc") return levelB - levelA;
+        if (sortType === "time-desc") return timeB - timeA;
+        if (sortType === "time-asc") return timeA - timeB;
+        if (sortType === "alpha-asc") return wordA.localeCompare(wordB);
+        if (sortType === "alpha-desc") return wordB.localeCompare(wordA);
+        return 0;
+    });
+
+    countSpan.textContent = `(${filteredWords.length}${filterText || filterDueOnly ? ' / 總計 ' + words.length : ''})`;
+
+    if (filteredWords.length === 0) {
+        if (filterDueOnly) {
+            wordListDiv.innerHTML = "<p style='color:#107c10; font-weight:bold; padding:10px; background:#eefbe8; border-radius:6px;'>🎉 棒極了！目前沒有需要複習的單字！</p>";
+        } else {
+            wordListDiv.innerHTML = filterText ? "<p style='color:#777;'>沒有符合條件的單字。</p>" : "<p style='color:#777;'>目前尚無儲存的單字。</p>";
+        }
+        return;
+    }
+
+    wordListDiv.innerHTML = filteredWords.map((item) => {
+        const realIndex = words.findIndex(w => w.word.toLowerCase() === item.word.toLowerCase());
+        const cleanWord = sanitizeWord(item.word);
+
+        const displayTime = item.updatedAt || item.createdAt;
+        const timeString = displayTime 
+            ? new Date(displayTime).toLocaleString('zh-TW', { 
+                year: 'numeric', month: '2-digit', day: '2-digit', 
+                hour: '2-digit', minute: '2-digit', hour12: false 
+              })
+            : '無紀錄時間';
+
+        const posTag = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
+        const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
+        const categoryBadge = item.category ? `<span class="category-badge">🏷️ ${item.category}</span>` : '';
+
+        const level = item.mastery || 0;
+        const stars = "★".repeat(level) + "☆".repeat(5 - level);
+        const isDue = !item.nextReviewDate || item.nextReviewDate <= now;
+        
+        let dueStatusHTML = "";
+        if (isDue) {
+            dueStatusHTML = `<span class="srs-due-tag">🎯 今日待複習</span>`;
+        } else {
+            const nextDateStr = new Date(item.nextReviewDate).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' });
+            dueStatusHTML = `<span class="srs-ok-tag">⏳ 下次複習：${nextDateStr}</span>`;
+        }
+
+        const derivativesList = Array.isArray(item.derivatives) && item.derivatives.length ? item.derivatives.join("； ") : (typeof item.derivatives === 'string' && item.derivatives ? item.derivatives : '-');
+        const collocationsList = Array.isArray(item.collocations) && item.collocations.length ? item.collocations.join("； ") : (typeof item.collocations === 'string' && item.collocations ? item.collocations : '-');
+        const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : (typeof item.synonyms === 'string' && item.synonyms ? item.synonyms : '-');
+        const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : (typeof item.antonyms === 'string' && item.antonyms ? item.antonyms : '-');
+        const confusablesList = Array.isArray(item.confusables) && item.confusables.length ? item.confusables.join("； ") : (typeof item.confusables === 'string' && item.confusables ? item.confusables : '-');
+
+        const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1);
+        const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2);
+        const formHTML = renderGrammaticalForm(item.grammaticalForm);
+
+        const safeWord = escapeJsStr(cleanWord);
+
+        return `
+            <div class="word-card">
+                <div class="word-card-top">
+                    <div style="font-size:0.8rem; color:#888;">📅 ${timeString}</div>
+                    <div class="word-actions">
+                        <button class="success btn-sm" onclick="markMastery(${realIndex}, true)">✅ 記得</button>
+                        <button class="danger btn-sm" onclick="markMastery(${realIndex}, false)">❌ 忘記</button>
+                        <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
+                        <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
+                        <button class="primary btn-sm" onclick="updateSingleWord(${realIndex}, event)">✨ AI 重整</button>
+                        <button class="danger btn-sm" onclick="deleteWord(${realIndex})">🗑️ 刪除</button>
+                    </div>
+                </div>
+
+                <div class="srs-box">
+                    <span>熟練度：<span class="srs-star">${stars}</span> (Level ${level})</span>
+                    ${dueStatusHTML}
+                </div>
+
+                <details style="margin-top:8px;">
+                    <summary>
+                        ${cleanWord} ${posTag} ${phoneticText}
+                        <span class="zh-wrapper">
+                            <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️ 翻譯</button>
+                            <span class="zh-text hidden" style="font-weight:normal; color:#555;">[${item.chinese}]</span>
+                        </span>
+                        <div>${categoryBadge}</div>
+                    </summary>
+                    <div class="detail-content">
+                        <p><strong>📌 詞性形態：</strong>${formHTML}</p>
+                        <p><strong>💡 多益考點：</strong>${item.toeic || '-'}</p>
+                        <p><strong>🌱 衍生字族：</strong>${derivativesList}</p>
+                        <p><strong>🔗 常用搭配：</strong>${collocationsList}</p>
+                        <p><strong>⚠️ 易混淆字：</strong>${confusablesList}</p>
+                        <p><strong>🔄 同義 / ↔️ 反義：</strong>同義: ${synonymsList} ｜ 反義: ${antonymsList}</p>
+                        <p><strong>📝 例句 1：</strong>${ex1HTML}</p>
+                        <p><strong>📝 例句 2：</strong>${ex2HTML}</p>
+                    </div>
+                </details>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleAllDetails(open) {
+    document.querySelectorAll('#wordList details').forEach(detail => detail.open = open);
+}
+
+async function deleteWord(index) {
+    if (confirm("確定要刪除這個單字嗎？")) {
+        const words = getWords();
+        words.splice(index, 1);
+        await saveWords(words);
+    }
+}
+
+function exportData() {
+    const words = getWords();
+    if (words.length === 0) {
+        alert("單字庫目前是空的，無法匯出。");
+        return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(words, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `TOEIC_Vocab_Backup_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+}
+
+async function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const importedWords = JSON.parse(e.target.result);
+            if (!Array.isArray(importedWords)) throw new Error("檔案格式不符合 JSON 陣列");
+            
+            const currentWords = getWords();
+            let addedCount = 0;
+
+            importedWords.forEach(newItem => {
+                if (newItem.word) {
+                    newItem.word = sanitizeWord(newItem.word);
+                    if (!currentWords.some(w => w.word.toLowerCase() === newItem.word.toLowerCase())) {
+                        if (!newItem.createdAt) newItem.createdAt = Date.now();
+                        currentWords.push(newItem);
+                        addedCount++;
+                    }
+                }
+            });
+
+            await saveWords(currentWords);
+            alert(`成功匯入 ${addedCount} 個新單字並已同步雲端！`);
+        } catch (err) {
+            alert("匯入失敗：請確認選取的 JSON 檔案格式是否正確。");
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+fetchCloudWords();
+</script>
+
+</body>
+</html>
