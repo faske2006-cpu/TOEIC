@@ -49,12 +49,10 @@ h2 {
     box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 
-/* 讓 AI 分析結果區塊捲動時預留頂部空間，避免被置頂搜尋列遮擋 */
 #resultContainer {
     scroll-margin-top: 100px;
 }
 
-/* 固定搜尋介面樣式 */
 .sticky-search {
     position: sticky;
     top: max(12px, env(safe-area-inset-top));
@@ -488,7 +486,6 @@ details summary:hover {
         </details>
     </div>
 
-    <!-- 加上 sticky-search 讓頁面滾動時固定在上方 -->
     <div class="card sticky-search">
         <input id="wordInput" placeholder="輸入英文單字（含動態變形、複數）或中文..." onkeydown="handleKeyDown(event)">
         <div style="display:flex; gap:8px; margin-top:8px;">
@@ -498,7 +495,6 @@ details summary:hover {
         </div>
     </div>
 
-    <!-- 加入 id="resultContainer" 以便定位捲動 -->
     <div class="card" id="resultContainer">
         <h2>AI 分析結果</h2>
         <div id="result" style="color:#666;">請輸入單字或中文進行查詢</div>
@@ -532,7 +528,7 @@ details summary:hover {
 
             <div class="btn-group">
                 <button id="filterDueBtn" class="warning" onclick="toggleDueOnlyFilter()">🎯 今日待複習 (<span id="dueCount">0</span>)</button>
-                <button class="primary" onclick="fetchCloudWords()">☁️ 從雲端拉取</button>
+                <button class="primary" onclick="fetchCloudWords()">☁️ 從雲端拉取 (智慧合併)</button>
                 <button id="upgradeBtn" class="primary" onclick="upgradeOldWords(event)">🔄 批次補齊舊單字</button>
                 <button class="secondary" onclick="toggleAllDetails(true)">📂 全部展開</button>
                 <button class="secondary" onclick="toggleAllDetails(false)">📁 全部折疊</button>
@@ -768,12 +764,13 @@ async function saveWords(words, doSync = true) {
     }
 }
 
+// 修正後的智慧合併雲端同步函式：確保本地與雲端單字互補，不發生覆蓋導致單字數量變少
 async function fetchCloudWords() {
     const gasUrl = getGasUrl();
     if (!gasUrl) return;
 
     const syncStatus = document.getElementById("syncStatus");
-    if (syncStatus) syncStatus.textContent = "⏳ 正在讀取雲端資料與檢查重複單字...";
+    if (syncStatus) syncStatus.textContent = "⏳ 正在讀取雲端資料與智慧合併...";
 
     try {
         const res = await fetch(gasUrl);
@@ -785,10 +782,57 @@ async function fetchCloudWords() {
 
         let cloudWords = JSON.parse(text);
         if (Array.isArray(cloudWords)) {
-            cloudWords = checkAndFixDatabaseWords(cloudWords, true);
-            localStorage.setItem("vocabDB", JSON.stringify(cloudWords));
+            const localWords = getWords();
+            const wordMap = new Map();
+
+            const getScore = (item) => {
+                let score = 0;
+                if (item.chinese && item.chinese !== '中文翻譯') score += 2;
+                if (item.partOfSpeech) score += 1;
+                if (item.phonetic) score += 1;
+                if (item.example1_en) score += 1;
+                if (item.example3_en) score += 2;
+                if (item.mastery > 0) score += item.mastery;
+                return score;
+            };
+
+            // 優先放入雲端資料
+            for (const item of cloudWords) {
+                if (!item || !item.word) continue;
+                wordMap.set(item.word.toLowerCase(), item);
+            }
+
+            // 合併本地資料（若本地有雲端沒有的單字，或是本地資料更新/更完整）
+            for (const item of localWords) {
+                if (!item || !item.word) continue;
+                const key = item.word.toLowerCase();
+                if (!wordMap.has(key)) {
+                    wordMap.set(key, item);
+                } else {
+                    const existing = wordMap.get(key);
+                    const existingScore = getScore(existing);
+                    const localScore = getScore(item);
+                    const existingTime = existing.updatedAt || existing.createdAt || 0;
+                    const localTime = item.updatedAt || item.createdAt || 0;
+
+                    if (localScore > existingScore || localTime > existingTime) {
+                        wordMap.set(key, item);
+                    }
+                }
+            }
+
+            const mergedWords = Array.from(wordMap.values());
+            mergedWords.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+
+            const finalWords = checkAndFixDatabaseWords(mergedWords, false);
+            
+            localStorage.setItem("vocabDB", JSON.stringify(finalWords));
             renderWordList();
-            if (syncStatus) syncStatus.textContent = "✅ 已成功載入雲端資料（自動排除重複）！";
+
+            // 回傳合併後的完整清單到雲端
+            await saveWords(finalWords, true);
+
+            if (syncStatus) syncStatus.textContent = `✅ 雲端資料同步完成（共 ${finalWords.length} 個單字）！`;
         } else {
             throw new Error("雲端資料格式不符");
         }
@@ -965,7 +1009,6 @@ async function lookupWord() {
     const resultDiv = document.getElementById("result");
     searchBtn.disabled = true;
 
-    // 讓畫面平滑捲動到 AI 分析結果畫面
     document.getElementById("resultContainer").scrollIntoView({
         behavior: "smooth",
         block: "start"
@@ -1799,6 +1842,7 @@ async function importData(event) {
     event.target.value = '';
 }
 
+// 頁面載入時執行智慧合併拉取
 fetchCloudWords();
 </script>
 
