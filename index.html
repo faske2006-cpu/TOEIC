@@ -49,6 +49,19 @@ h2 {
     box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 
+/* 讓 AI 分析結果區塊捲動時預留頂部空間，避免被置頂搜尋列遮擋 */
+#resultContainer {
+    scroll-margin-top: 100px;
+}
+
+/* 固定搜尋介面樣式 */
+.sticky-search {
+    position: sticky;
+    top: max(12px, env(safe-area-inset-top));
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
 .api-box {
     background: #eef6ff;
     border: 1px solid #b6d8ff;
@@ -289,23 +302,6 @@ button:disabled {
     border-radius: 3px;
 }
 
-.verb-flow-box {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
-    padding: 6px 10px;
-    background: #ffffff;
-    border: 1px dashed #d97706;
-    border-radius: 6px;
-    font-size: 0.9rem;
-}
-
-.verb-flow-arrow {
-    color: #d97706;
-    font-weight: bold;
-}
-
 details {
     width: 100%;
 }
@@ -336,7 +332,6 @@ details summary:hover {
     margin: 10px 0;
 }
 
-/* 例句外層與標題行排版（語音按鈕移至標題右側） */
 .example-wrapper {
     margin-top: 10px;
 }
@@ -359,11 +354,10 @@ details summary:hover {
 .example-box {
     padding: 10px 12px;
     background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-left: 4px solid #0078d4;
     border-radius: 0 6px 6px 0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    border: 1px solid #e2e8f0;
-    border-left: 4px solid #0078d4;
 }
 
 .example-en {
@@ -494,7 +488,8 @@ details summary:hover {
         </details>
     </div>
 
-    <div class="card">
+    <!-- 加上 sticky-search 讓頁面滾動時固定在上方 -->
+    <div class="card sticky-search">
         <input id="wordInput" placeholder="輸入英文單字（含動態變形、複數）或中文..." onkeydown="handleKeyDown(event)">
         <div style="display:flex; gap:8px; margin-top:8px;">
             <button id="searchBtn" class="primary" style="flex:2;" onclick="lookupWord()">🤖 Gemini 深入分析</button>
@@ -503,7 +498,8 @@ details summary:hover {
         </div>
     </div>
 
-    <div class="card">
+    <!-- 加入 id="resultContainer" 以便定位捲動 -->
+    <div class="card" id="resultContainer">
         <h2>AI 分析結果</h2>
         <div id="result" style="color:#666;">請輸入單字或中文進行查詢</div>
     </div>
@@ -969,6 +965,12 @@ async function lookupWord() {
     const resultDiv = document.getElementById("result");
     searchBtn.disabled = true;
 
+    // 讓畫面平滑捲動到 AI 分析結果畫面
+    document.getElementById("resultContainer").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+
     let logs = [];
     const renderLogs = () => {
         resultDiv.innerHTML = `
@@ -990,35 +992,51 @@ async function lookupWord() {
 
     addLog(`開始分析單字："${wordInput}"`);
 
-    const prompt = `你是一位專業的 TOEIC 英文教學專家。請分析使用者輸入的詞彙："${wordInput}"。
+    const prompt = `你是一位專業的 TOEIC 英文教學專家。請深度分析使用者輸入的詞彙："${wordInput}"。
 如果輸入的是中文，請找出最適合多益 (TOEIC) 考試對應的核心英文單字，並填入 "word" 欄位；如果輸入的是英文，則直接使用該英文單字。
 
 ⚠️ 重要規範：
 1. 必須回覆嚴格標準合法 JSON 格式。
-2. "word" 欄位的大寫規範：除了全大寫縮寫 (如 CEO, VIP) 或專有名詞 (如 Taiwan, Monday) 外，一般普通單字請務必一律使用【全小寫】（例如：employee 而非 Employee）。
-3. 仔細判定使用者輸入的英文單字屬於何種【詞態與文法形態】（例如：規則名詞複數、不規則複數、規則動詞過去式/過去分詞、不規則動詞三態、單複數同形、原形等）。
-   - 若為不規則動詞三態，請在 grammaticalForm 標註「三態變化（go ➔ went ➔ gone）」。
-   - 若為不規則名詞複數，請標註「名詞原形（複數：children）」。
-   - 若為單複數同形，請標註「單複數同形：名詞原形（複數：sheep）」。
+2. "word" 欄位的大寫規範：除了全大寫縮寫 (如 CEO, VIP) 或專有名詞 (如 Taiwan, Monday) 外，一般普通單字請務必一律使用【全小寫】。
+3. 針對動詞，必須完整獨立提供【動詞三態】（原形、過去式、過去分詞、現在分詞/動名詞）；若非動詞則填入結構化欄位或 "N/A"。
+4. 必須包含字根、字首與字尾拆解 (Root, Prefix & Suffix) 邏輯。
+5. 衍生字必須帶有詞性與中文對照格式（例如：["tailoring (n. 裁縫業)", "tailored (adj. 量身訂做的)"]）。
+6. **例句數量擴充**：請提供 **3 個** 不同情境的多益實用例句（包含日常、職場、會議或書信等），確保涵蓋不同語境。
 
-請包含以下極為完整的單字資訊：
+請包含以下極為完整的單字資訊結構：
 {
  "word": "對應的英文單字 (一般單字必須全小寫)",
+ "targetScore": "多益目標分數級距與考頻標籤 (例如：600分基礎 / 750分進階 / 860+ 金色證書，以及歷屆考頻說明)",
+ "verbTenses": {
+    "base": "原形 (若非動詞填 N/A)",
+    "past": "過去式",
+    "pastParticiple": "過去分詞",
+    "presentParticiple": "現在分詞"
+ },
+ "businessContext": "商務 Email 與職場情境實用句型（如報價、請假、協調會議最常搭配的實用短句與中文）",
+ "listeningDistractors": "聽力測驗 Part 1-4 易混淆音與干擾項提示",
+ "mnemonicTip": "趣味諧音、字源故事或圖像聯想記憶法口訣",
+ "ukUsVariation": "英美拼寫與發音差異對照（若無則填 無明顯差異）",
  "grammaticalForm": "單字的詞態與文法形態分析",
- "phonetic": "KK 音標 (例如：/rɪˈspon.sə.bəl/)",
- "partOfSpeech": "詞性縮寫 (例如：n., v., adj., adv.)",
+ "rootAnalysis": "字根、字首與字尾拆解邏輯說明",
+ "phonetic": "KK 音標",
+ "partOfSpeech": "詞性縮寫",
  "chinese": "中文繁體翻譯",
  "category": "多益情境領域",
- "toeic": "多益常考情境與解題重點陷阱說明",
- "derivatives": ["衍生字與詞性1", "衍生字與詞性2"],
+ "toeic": "多益常考情境與解題重點說明",
+ "part7Synonyms": "多益閱讀 (Part 7) 文章中常見的同義字替換提示",
+ "grammarTraps": "多益 (Part 5) 文法考點陷阱與常搭介系詞警示",
+ "derivatives": ["衍生字1 (n. 中文)", "衍生字2 (adj. 中文)"],
  "collocations": ["常見搭配詞1", "常見搭配詞2"],
  "synonyms": ["同義字1", "同義字2"],
  "antonyms": ["反義字1", "反義字2"],
  "confusables": ["易混淆字與區分提示"],
  "example1_en": "英文例句 1 (純英文)",
- "example1_zh": "英文例句 1 的中文繁體翻譯 (不要加括號)",
+ "example1_zh": "英文例句 1 的中文繁體翻譯",
  "example2_en": "英文例句 2 (純英文)",
- "example2_zh": "英文例句 2 的中文繁體翻譯 (不要加括號)"
+ "example2_zh": "英文例句 2 的中文繁體翻譯",
+ "example3_en": "英文例句 3 (純英文)",
+ "example3_zh": "英文例句 3 的中文繁體翻譯"
 }`;
 
     try {
@@ -1058,7 +1076,7 @@ function formatExampleHTML(enText, zhText, legacyText, exampleNum) {
         }
     }
 
-    if (!en && !zh) return "-";
+    if (!en && !zh) return "";
 
     const safeEn = escapeJsStr(en);
 
@@ -1099,31 +1117,37 @@ function renderGrammaticalForm(formText) {
         badgeHTML = `<span class="alert-badge badge-irregular-noun">⚠️ 不規則</span>`;
     }
 
-    if (isIrregularVerb && formText.includes("➔")) {
-        const parts = formText.split(/[\(（]/);
-        const prefix = parts[0].trim();
-        const flowPart = parts[1] ? parts[1].replace(/[\)）]/, '').replace("三態變化：", "").trim() : "";
-
-        if (flowPart && flowPart.includes("➔")) {
-            const verbSteps = flowPart.split("➔").map(s => s.trim());
-            const flowHTML = verbSteps.map((step, idx) => {
-                const isHighlight = idx > 0;
-                return `<span class="${isHighlight ? 'irregular-highlight' : ''}">${step}</span>`;
-            }).join(' <span class="verb-flow-arrow">➔</span> ');
-
-            return `
-                <span>${prefix} ${badgeHTML}</span>
-                <div class="verb-flow-box">
-                    <span style="font-size:0.82rem; color:#666;">三態流程：</span>
-                    ${flowHTML}
-                </div>
-            `;
-        }
-    }
-
     let formattedText = formText.replace(/\*\*(.*?)\*\*/g, '<span class="irregular-highlight">$1</span>');
 
     return `<span>${formattedText} ${badgeHTML}</span>`;
+}
+
+function renderVerbTensesBox(vt) {
+    if (!vt || typeof vt !== 'object' || !vt.base || vt.base === 'N/A' || vt.base === '-') {
+        return '';
+    }
+    return `
+        <div style="background: #fff8f0; border: 1px solid #fed7aa; border-radius: 6px; padding: 10px; margin: 10px 0;">
+            <div style="font-weight: bold; color: #c2410c; margin-bottom: 6px; font-size: 0.9rem;">🔥 獨立動詞三態資訊欄：</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; font-size: 0.88rem;">
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>原形:</strong> ${vt.base || '-'}</div>
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>過去式:</strong> ${vt.past || '-'}</div>
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>過去分詞:</strong> ${vt.pastParticiple || '-'}</div>
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>現在分詞:</strong> ${vt.presentParticiple || '-'}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderTargetScoreBadge(targetScore) {
+    if (!targetScore || targetScore === '-') return '';
+    let bg = '#eff6ff', color = '#1d4ed8', border = '#bfdbfe';
+    if (targetScore.includes('860')) {
+        bg = '#fef3c7'; color = '#b45309'; border = '#fde68a';
+    } else if (targetScore.includes('750')) {
+        bg = '#f0fdf4'; color = '#15803d'; border = '#bbf7d0';
+    }
+    return `<span style="background: ${bg}; color: ${color}; border: 1px solid ${border}; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">🎯 ${targetScore}</span>`;
 }
 
 function renderCardHTML(item, isSearchResult = false) {
@@ -1131,15 +1155,26 @@ function renderCardHTML(item, isSearchResult = false) {
     const posText = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
     const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
     const categoryBadge = item.category ? `<span class="category-badge">🏷️ ${item.category}</span>` : '';
+    const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
+    const verbTensesHTML = renderVerbTensesBox(item.verbTenses);
 
-    const derivativesList = Array.isArray(item.derivatives) && item.derivatives.length ? item.derivatives.join("； ") : "-";
-    const collocationsList = Array.isArray(item.collocations) && item.collocations.length ? item.collocations.join("； ") : "-";
-    const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : "-";
-    const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : "-";
-    const confusablesList = Array.isArray(item.confusables) && item.confusables.length ? item.confusables.join("； ") : "-";
+    const rootAnalysis = item.rootAnalysis || '-';
+    const part7Synonyms = item.part7Synonyms || '-';
+    const grammarTraps = item.grammarTraps || '-';
+    const businessContext = item.businessContext || '-';
+    const listeningDistractors = item.listeningDistractors || '-';
+    const mnemonicTip = item.mnemonicTip || '-';
+    const ukUsVariation = item.ukUsVariation || '無明顯差異';
+
+    const derivativesList = Array.isArray(item.derivatives) && item.derivatives.length ? item.derivatives.join("； ") : (typeof item.derivatives === 'string' && item.derivatives ? item.derivatives : '-');
+    const collocationsList = Array.isArray(item.collocations) && item.collocations.length ? item.collocations.join("； ") : (typeof item.collocations === 'string' && item.collocations ? item.collocations : '-');
+    const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : (typeof item.synonyms === 'string' && item.synonyms ? item.synonyms : '-');
+    const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : (typeof item.antonyms === 'string' && item.antonyms ? item.antonyms : '-');
+    const confusablesList = Array.isArray(item.confusables) && item.confusables.length ? item.confusables.join("； ") : (typeof item.confusables === 'string' && item.confusables ? item.confusables : '-');
 
     const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1, 1);
     const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2, 2);
+    const ex3HTML = formatExampleHTML(item.example3_en, item.example3_zh, null, 3);
     const formHTML = renderGrammaticalForm(item.grammaticalForm);
 
     return `
@@ -1150,17 +1185,26 @@ function renderCardHTML(item, isSearchResult = false) {
                     <button class="zh-toggle-btn" onclick="toggleZh(this)">👁️ 翻譯</button>
                     <span class="zh-text hidden" style="font-weight:normal; color:#555;">[${item.chinese}]</span>
                 </span>
-                <div>${categoryBadge}</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">${categoryBadge} ${targetScoreBadge}</div>
             </div>
             <div class="detail-content" style="border-top:1px dashed #eee; margin-top:8px;">
+                ${verbTensesHTML}
                 <p><strong>📌 詞性形態：</strong>${formHTML}</p>
+                <p><strong>🧩 字根字首拆解：</strong>${rootAnalysis}</p>
                 <p><strong>💡 多益考點：</strong>${item.toeic || '-'}</p>
+                <p><strong>💼 商務 Email 與職場情境句：</strong>${businessContext}</p>
+                <p><strong>🎧 聽力易混淆音與干擾項：</strong>${listeningDistractors}</p>
+                <p><strong>💡 趣味諧音與聯想口訣：</strong>${mnemonicTip}</p>
+                <p><strong>🇬🇧🇺🇸 英美拼寫/發音差異：</strong>${ukUsVariation}</p>
+                <p><strong>📖 Part 7 同義替換：</strong>${part7Synonyms}</p>
+                <p><strong>⚠️ 文法陷阱與介系詞：</strong>${grammarTraps}</p>
                 <p><strong>🌱 衍生字族：</strong>${derivativesList}</p>
                 <p><strong>🔗 常用搭配：</strong>${collocationsList}</p>
                 <p><strong>⚠️ 易混淆字：</strong>${confusablesList}</p>
                 <p><strong>🔄 同義 / ↔️ 反義：</strong>同義: ${synonymsList} ｜ 反義: ${antonymsList}</p>
                 ${ex1HTML}
                 ${ex2HTML}
+                ${ex3HTML}
             </div>
             ${isSearchResult ? `<button class="primary" style="width:100%; margin-top:10px;" onclick="addCurrentToList()">➕ 保存到我的單字庫 (自動同步雲端)</button>` : ''}
         </div>
@@ -1285,30 +1329,49 @@ async function updateSingleWord(index, btnEvt) {
     }
 
     try {
-        const prompt = `你是一位專業的 TOEIC 英文教學專家。請分析英文單字："${cleanWord}"。
+        const prompt = `你是一位專業的 TOEIC 英文教學專家。請深度分析英文單字："${cleanWord}"。
 ⚠️ 重要規範：
 1. 必須回覆嚴格標準合法 JSON 格式。
 2. "word" 欄位除全大寫縮寫或專有名詞外，普通單字請務必使用【全小寫】。
-3. 判斷 "grammaticalForm" 欄位（詞態與文法形態分析）。
+3. 針對動詞，必須完整獨立提供【動詞三態】；若非動詞則填入結構化欄位或 "N/A"。
+4. 包含字根、字首與字尾拆解 (Root, Prefix & Suffix)。
+5. 衍生字必須帶有詞性與中文對照格式。
+6. 請提供 **3 個** 不同情境的多益實用例句。
 
-請包含以下極為完整的單字資訊：
+請包含以下極為完整的單字資訊結構：
 {
  "word": "${cleanWord}",
+ "targetScore": "多益目標分數級距與考頻標籤",
+ "verbTenses": {
+    "base": "原形",
+    "past": "過去式",
+    "pastParticiple": "過去分詞",
+    "presentParticiple": "現在分詞"
+ },
+ "businessContext": "商務 Email 與職場情境實用句型",
+ "listeningDistractors": "聽力測驗易混淆音與干擾項提示",
+ "mnemonicTip": "趣味諧音或聯想記憶法口訣",
+ "ukUsVariation": "英美拼寫與發音差異對照",
  "grammaticalForm": "單字形態與詞性分析",
- "phonetic": "KK 音標 (例如：/rɪˈspon.sə.bəl/)",
- "partOfSpeech": "詞性縮寫 (例如：n., v., adj., adv.)",
+ "rootAnalysis": "字根、字首與字尾拆解邏輯說明",
+ "phonetic": "KK 音標",
+ "partOfSpeech": "詞性縮寫",
  "chinese": "${item.chinese || '中文翻譯'}",
  "category": "多益情境領域",
- "toeic": "多益常考情境與解題重點陷阱說明",
- "derivatives": ["衍生字與詞性1", "衍生字與詞性2"],
+ "toeic": "多益常考情境與解題重點說明",
+ "part7Synonyms": "多益閱讀 (Part 7) 文章中常見的同義字替換提示",
+ "grammarTraps": "多益 (Part 5) 文法考點陷阱與常搭介系詞警示",
+ "derivatives": ["衍生字1 (n. 中文)", "衍生字2 (adj. 中文)"],
  "collocations": ["常見搭配詞1", "常見搭配詞2"],
  "synonyms": ["同義字1", "同義字2"],
  "antonyms": ["反義字1", "反義字2"],
  "confusables": ["易混淆字與區分提示"],
  "example1_en": "英文例句 1 (純英文)",
- "example1_zh": "英文例句 1 的中文繁體翻譯 (不要加括號)",
+ "example1_zh": "英文例句 1 的中文繁體翻譯",
  "example2_en": "英文例句 2 (純英文)",
- "example2_zh": "英文例句 2 的中文繁體翻譯 (不要加括號)"
+ "example2_zh": "英文例句 2 的中文繁體翻譯",
+ "example3_en": "英文例句 3 (純英文)",
+ "example3_zh": "英文例句 3 的中文繁體翻譯"
 }`;
 
         const data = await fetchGeminiAPI(prompt);
@@ -1322,8 +1385,8 @@ async function updateSingleWord(index, btnEvt) {
         words[index] = {
             ...item,
             ...newInfo,
-            createdAt: item.createdAt || Date.now(),
-            updatedAt: Date.now()
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt
         };
 
         await saveWords(words);
@@ -1345,18 +1408,27 @@ function isWordIncomplete(item) {
     const isEmptyStr = (val) => !val || typeof val !== 'string' || val.trim() === '' || val.trim() === '-';
     const isEmptyArr = (val) => !Array.isArray(val) || val.length === 0;
 
-    const hasEx1Zh = item.example1_zh || (item.example1 && item.example1.includes('(')) || (item.example1 && item.example1.includes('（'));
+    const hasEx1Zh = item.example1_zh || (item.example1 && (item.example1.includes('(') || item.example1.includes('（')));
+    const hasEx3 = item.example3_en && item.example3_zh;
 
     return (
         isEmptyStr(item.partOfSpeech) ||
         isEmptyStr(item.phonetic) ||
         isEmptyStr(item.category) ||
         isEmptyStr(item.toeic) ||
+        isEmptyStr(item.targetScore) ||
+        isEmptyStr(item.businessContext) ||
+        isEmptyStr(item.listeningDistractors) ||
+        isEmptyStr(item.mnemonicTip) ||
         isEmptyStr(item.grammaticalForm) ||
+        isEmptyStr(item.rootAnalysis) ||
+        isEmptyStr(item.part7Synonyms) ||
+        isEmptyStr(item.grammarTraps) ||
         isEmptyArr(item.derivatives) ||
         isEmptyArr(item.collocations) ||
         isEmptyArr(item.confusables) ||
-        !hasEx1Zh
+        !hasEx1Zh ||
+        !hasEx3
     );
 }
 
@@ -1375,11 +1447,11 @@ async function upgradeOldWords(evt) {
     });
 
     if (outdatedIndices.length === 0) {
-        alert("🎉 您的單字庫中所有單字都已經擁有完整資訊！");
+        alert("🎉 您的單字庫中所有單字都已經擁有完整資訊與 3 個例句！");
         return;
     }
 
-    if (!confirm(`檢測到有 ${outdatedIndices.length} 個單字資訊尚不完整或缺乏形態分析。\n是否開始自動補齊完整內容？`)) return;
+    if (!confirm(`檢測到有 ${outdatedIndices.length} 個單字資訊尚不完整或缺乏 3 個例句等新功能欄位。\n是否開始自動補齊完整內容？`)) return;
 
     let successCount = 0;
     let failedWords = [];
@@ -1404,30 +1476,49 @@ async function upgradeOldWords(evt) {
                 await new Promise(resolve => setTimeout(resolve, 3000));
             }
 
-            const prompt = `你是一位專業的 TOEIC 英文教學專家。請分析英文單字："${cleanWord}"。
+            const prompt = `你是一位專業的 TOEIC 英文教學專家。請深度分析英文單字："${cleanWord}"。
 ⚠️ 重要規範：
 1. 必須回覆嚴格標準合法 JSON 格式。
 2. "word" 欄位除全大寫縮寫或專有名詞外，普通單字請務必使用【全小寫】。
-3. 判斷 "grammaticalForm" 欄位（詞態與文法形態分析）。
+3. 針對動詞，必須完整獨立提供【動詞三態】；若非動詞則填入結構化欄位或 "N/A"。
+4. 包含字根、字首與字尾拆解 (Root, Prefix & Suffix)。
+5. 衍生字必須帶有詞性與中文對照格式。
+6. 請提供 **3 個** 不同情境的多益實用例句。
 
-請包含以下極為完整的單字資訊：
+請包含以下極為完整的單字資訊結構：
 {
  "word": "${cleanWord}",
+ "targetScore": "多益目標分數級距與考頻標籤",
+ "verbTenses": {
+    "base": "原形",
+    "past": "過去式",
+    "pastParticiple": "過去分詞",
+    "presentParticiple": "現在分詞"
+ },
+ "businessContext": "商務 Email 與職場情境實用句型",
+ "listeningDistractors": "聽力測驗易混淆音與干擾項提示",
+ "mnemonicTip": "趣味諧音或聯想記憶法口訣",
+ "ukUsVariation": "英美拼寫與發音差異對照",
  "grammaticalForm": "單字形態與詞性分析",
- "phonetic": "KK 音標 (例如：/rɪˈspon.sə.bəl/)",
- "partOfSpeech": "詞性縮寫 (例如：n., v., adj., adv.)",
+ "rootAnalysis": "字根、字首與字尾拆解邏輯說明",
+ "phonetic": "KK 音標",
+ "partOfSpeech": "詞性縮寫",
  "chinese": "${item.chinese || '中文翻譯'}",
  "category": "多益情境領域",
- "toeic": "多益常考情境與解題重點陷阱說明",
- "derivatives": ["衍生字與詞性1", "衍生字與詞性2"],
+ "toeic": "多益常考情境與解題重點說明",
+ "part7Synonyms": "多益閱讀 (Part 7) 文章中常見的同義字替換提示",
+ "grammarTraps": "多益 (Part 5) 文法考點陷阱與常搭介系詞警示",
+ "derivatives": ["衍生字1 (n. 中文)", "衍生字2 (adj. 中文)"],
  "collocations": ["常見搭配詞1", "常見搭配詞2"],
  "synonyms": ["同義字1", "同義字2"],
  "antonyms": ["反義字1", "反義字2"],
  "confusables": ["易混淆字與區分提示"],
  "example1_en": "英文例句 1 (純英文)",
- "example1_zh": "英文例句 1 的中文繁體翻譯 (不要加括號)",
+ "example1_zh": "英文例句 1 的中文繁體翻譯",
  "example2_en": "英文例句 2 (純英文)",
- "example2_zh": "英文例句 2 的中文繁體翻譯 (不要加括號)"
+ "example2_zh": "英文例句 2 的中文繁體翻譯",
+ "example3_en": "英文例句 3 (純英文)",
+ "example3_zh": "英文例句 3 的中文繁體翻譯"
 }`;
 
             const data = await fetchGeminiAPI(prompt);
@@ -1441,8 +1532,8 @@ async function upgradeOldWords(evt) {
             words[idx] = {
                 ...item,
                 ...newInfo,
-                createdAt: item.createdAt || Date.now(),
-                updatedAt: Date.now()
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt
             };
 
             successCount++;
@@ -1555,6 +1646,16 @@ function renderWordList() {
         const posTag = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
         const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
         const categoryBadge = item.category ? `<span class="category-badge">🏷️ ${item.category}</span>` : '';
+        const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
+        const verbTensesHTML = renderVerbTensesBox(item.verbTenses);
+
+        const rootAnalysis = item.rootAnalysis || '-';
+        const part7Synonyms = item.part7Synonyms || '-';
+        const grammarTraps = item.grammarTraps || '-';
+        const businessContext = item.businessContext || '-';
+        const listeningDistractors = item.listeningDistractors || '-';
+        const mnemonicTip = item.mnemonicTip || '-';
+        const ukUsVariation = item.ukUsVariation || '無明顯差異';
 
         const level = item.mastery || 0;
         const stars = "★".repeat(level) + "☆".repeat(5 - level);
@@ -1576,6 +1677,7 @@ function renderWordList() {
 
         const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1, 1);
         const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2, 2);
+        const ex3HTML = formatExampleHTML(item.example3_en, item.example3_zh, null, 3);
         const formHTML = renderGrammaticalForm(item.grammaticalForm);
 
         const safeWord = escapeJsStr(cleanWord);
@@ -1606,17 +1708,26 @@ function renderWordList() {
                             <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️ 翻譯</button>
                             <span class="zh-text hidden" style="font-weight:normal; color:#555;">[${item.chinese}]</span>
                         </span>
-                        <div>${categoryBadge}</div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">${categoryBadge} ${targetScoreBadge}</div>
                     </summary>
                     <div class="detail-content">
+                        ${verbTensesHTML}
                         <p><strong>📌 詞性形態：</strong>${formHTML}</p>
+                        <p><strong>🧩 字根字首拆解：</strong>${rootAnalysis}</p>
                         <p><strong>💡 多益考點：</strong>${item.toeic || '-'}</p>
+                        <p><strong>💼 商務 Email 與職場情境句：</strong>${businessContext}</p>
+                        <p><strong>🎧 聽力易混淆音與干擾項：</strong>${listeningDistractors}</p>
+                        <p><strong>💡 趣味諧音與聯想口訣：</strong>${mnemonicTip}</p>
+                        <p><strong>🇬🇧🇺🇸 英美拼寫/發音差異：</strong>${ukUsVariation}</p>
+                        <p><strong>📖 Part 7 同義替換：</strong>${part7Synonyms}</p>
+                        <p><strong>⚠️ 文法陷阱與介系詞：</strong>${grammarTraps}</p>
                         <p><strong>🌱 衍生字族：</strong>${derivativesList}</p>
                         <p><strong>🔗 常用搭配：</strong>${collocationsList}</p>
                         <p><strong>⚠️ 易混淆字：</strong>${confusablesList}</p>
                         <p><strong>🔄 同義 / ↔️ 反義：</strong>同義: ${synonymsList} ｜ 反義: ${antonymsList}</p>
                         ${ex1HTML}
                         ${ex2HTML}
+                        ${ex3HTML}
                     </div>
                 </details>
             </div>
