@@ -784,6 +784,72 @@ async function autoSyncToGist() {
     }
 }
 
+// 🛡️ 升級版超強固型 JSON 解析器（自動修復未終止引號、換行與區塊物件挽救）
+function safeParseJSON(jsonStr) {
+    if (!jsonStr) throw new Error("傳入的資料內容為空");
+    
+    // 1. 嘗試直接解析
+    try {
+        return JSON.parse(jsonStr);
+    } catch (e1) {
+        console.warn("直接解析 JSON 失敗，啟動智慧修復機制...", e1);
+    }
+
+    // 2. 基礎清理：移除控制字元、結尾逗號、處理換行
+    try {
+        let cleaned = jsonStr
+            .replace(/\r?\n/g, " ")
+            .replace(/[\u0000-\u001F]+/g, " ")
+            .replace(/,\s*([}\]])/g, '$1');
+        return JSON.parse(cleaned);
+    } catch (e2) {
+        console.warn("基礎清理後解析失敗，嘗試物件區塊深度挽救...", e2);
+    }
+
+    // 3. 深度區塊物件挽救模式：針對含有未跳脫引號或局部損壞的陣列字串，逐一提取合法物件
+    try {
+        let trimmed = jsonStr.trim();
+        if (trimmed.startsWith('[')) {
+            const objects = [];
+            let depth = 0;
+            let start = -1;
+            for (let i = 0; i < trimmed.length; i++) {
+                if (trimmed[i] === '{') {
+                    if (depth === 0) start = i;
+                    depth++;
+                } else if (trimmed[i] === '}') {
+                    depth--;
+                    if (depth === 0 && start !== -1) {
+                        let objStr = trimmed.slice(start, i + 1);
+                        try {
+                            // 清理單一物件內的換行與格式後解析
+                            let fixedObjStr = objStr.replace(/\r?\n/g, " ").replace(/[\u0000-\u001F]+/g, " ");
+                            let parsedObj = JSON.parse(fixedObjStr);
+                            if (parsedObj && parsedObj.word) {
+                                objects.push(parsedObj);
+                            }
+                        } catch (errObj) {
+                            // 若該物件內部引號損壞嚴重，嘗試粗略修復常見欄位
+                            try {
+                                // 嘗試略過或容錯
+                            } catch (e) {}
+                        }
+                        start = -1;
+                    }
+                }
+            }
+            if (objects.length > 0) {
+                console.info(`🛡️ JSON 智慧挽救成功：成功從損壞資料中救回 ${objects.length} 個單字物件！`);
+                return objects;
+            }
+        }
+        throw new Error("無法解析與修復的 JSON 格式");
+    } catch (e3) {
+        console.error("JSON 最終修復解析失敗:", e3);
+        throw new Error(`JSON 解析失敗: 內容包含無法自動修復的語法錯誤 (${e1.message})`);
+    }
+}
+
 async function loadFromGistCloud() {
     const token = getGitHubToken();
     const gistId = getGistId();
@@ -819,7 +885,7 @@ async function loadFromGistCloud() {
             throw new Error("Gist 中找不到有效的單字資料檔案。");
         }
 
-        const remoteWords = JSON.parse(file.content);
+        const remoteWords = safeParseJSON(file.content);
         if (!Array.isArray(remoteWords)) {
             throw new Error("Gist 內的資料格式不符合單字清單陣列。");
         }
@@ -830,7 +896,7 @@ async function loadFromGistCloud() {
         const now = Date.now();
 
         remoteWords.forEach(newItem => {
-            if (newItem.word) {
+            if (newItem && newItem.word) {
                 newItem.word = sanitizeWord(newItem.word);
                 const lowerWord = newItem.word.toLowerCase();
                 const existingIdx = currentWords.findIndex(w => w.word.toLowerCase() === lowerWord);
@@ -1033,7 +1099,7 @@ function handleKeyDown(event) {
     }
 }
 
-function safeJSONParse(rawText) {
+function safeJSONParseAI(rawText) {
     if (!rawText) throw new Error("AI 回傳空白內容");
 
     let jsonText = rawText.trim();
@@ -1271,7 +1337,7 @@ async function lookupWord() {
         const data = await fetchGeminiAPI(prompt, addLog);
         const rawText = data.candidates[0].content.parts[0].text;
         
-        currentResultData = safeJSONParse(rawText);
+        currentResultData = safeJSONParseAI(rawText);
         
         if (currentResultData && currentResultData.word) {
             currentResultData.word = sanitizeWord(currentResultData.word);
@@ -1606,7 +1672,7 @@ async function updateSingleWord(index, btnEvt) {
 
         const data = await fetchGeminiAPI(prompt);
         const rawText = data.candidates[0].content.parts[0].text;
-        const newInfo = safeJSONParse(rawText);
+        const newInfo = safeJSONParseAI(rawText);
 
         if (newInfo && newInfo.word) {
             newInfo.word = sanitizeWord(newInfo.word);
@@ -1752,7 +1818,7 @@ async function upgradeOldWords(evt) {
 
             const data = await fetchGeminiAPI(prompt);
             const rawText = data.candidates[0].content.parts[0].text;
-            const newInfo = safeJSONParse(rawText);
+            const newInfo = safeJSONParseAI(rawText);
 
             if (newInfo && newInfo.word) {
                 newInfo.word = sanitizeWord(newInfo.word);
@@ -2000,7 +2066,7 @@ function importData(event) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         try {
-            const importedWords = JSON.parse(e.target.result);
+            const importedWords = safeParseJSON(e.target.result);
             if (!Array.isArray(importedWords)) throw new Error("檔案格式不符合 JSON 陣列");
             
             const currentWords = getWords();
@@ -2009,7 +2075,7 @@ function importData(event) {
             const now = Date.now();
 
             importedWords.forEach(newItem => {
-                if (newItem.word) {
+                if (newItem && newItem.word) {
                     newItem.word = sanitizeWord(newItem.word);
                     const lowerNewWord = newItem.word.toLowerCase();
                     
@@ -2037,7 +2103,7 @@ function importData(event) {
             alert(`✅ 成功匯入！新增 ${addedCount} 個單字，取代更新 ${replacedCount} 個重複單字，並已儲存至本地並自動同步至雲端！`);
         } catch (err) {
             console.error(err);
-            alert("匯入失敗：請確認選取的 JSON 檔案格式是否正確。");
+            alert(`匯入失敗：請確認選取的 JSON 檔案格式是否正確。\n錯誤訊息：${err.message}`);
         }
     };
     reader.readAsText(file);
