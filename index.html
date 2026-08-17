@@ -133,26 +133,33 @@ button:disabled {
 .voice-female { background: #e83e8c; color: white; }
 .voice-male { background: #007bb6; color: white; }
 
-.toolbar {
+/* 🚀 優化後的控制面板與工具列排版樣式 */
+.control-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 15px;
+    gap: 10px;
 }
 
-.filter-group {
+.control-row {
     display: flex;
-    flex-direction: column;
     gap: 8px;
-    width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 .search-input-wrap {
     position: relative;
-    width: 100%;
+    flex-grow: 1;
+    min-width: 200px;
 }
 
 .search-input-wrap input {
+    margin: 0;
     padding-right: 30px;
 }
 
@@ -170,15 +177,25 @@ button:disabled {
     display: none;
 }
 
-.btn-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 8px;
-    width: 100%;
+.control-panel select {
+    margin: 0;
+    width: auto;
+    flex-grow: 1;
+    min-width: 180px;
 }
 
-.btn-group button {
+.btn-toolbar-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
     width: 100%;
+    padding-top: 8px;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.btn-toolbar-group button {
+    flex: 1;
+    min-width: 120px;
     margin: 0;
 }
 
@@ -444,12 +461,6 @@ details summary:hover {
 @media (min-width: 650px) {
     body { padding: 20px; }
     h1 { font-size: 1.8rem; }
-    .toolbar { flex-direction: row; justify-content: space-between; align-items: center; }
-    .filter-group { flex-direction: row; flex-grow: 1; }
-    .filter-group .search-input-wrap { width: auto; flex-grow: 1; }
-    .filter-group select { width: auto; }
-    .btn-group { display: flex; flex-wrap: wrap; width: auto; }
-    .btn-group button { width: auto; }
 }
 </style>
 </head>
@@ -510,8 +521,10 @@ details summary:hover {
             <span class="stat-badge mastered">🏆 已精通: <span id="statMastered">0</span></span>
         </div>
 
-        <div class="toolbar">
-            <div class="filter-group">
+        <!-- 🚀 結構化優化後的控制面板 -->
+        <div class="control-panel">
+            <!-- 第一行：搜尋、排序與主篩選器 -->
+            <div class="control-row">
                 <div class="search-input-wrap">
                     <input id="filterInput" placeholder="🔍 搜尋已儲存單字..." oninput="handleFilterInput()">
                     <button id="clearSearchBtn" class="clear-search-btn" onclick="clearSearchFilter()">✖</button>
@@ -525,18 +538,19 @@ details summary:hover {
                     <option value="alpha-desc">🔤 字母順序 (Z ➔ A)</option>
                     <option value="srs-due">🎯 依複習緊急度（待複習優先）</option>
                 </select>
+                <button id="filterDueBtn" class="warning" style="width:auto; min-width:140px; margin:0;" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
             </div>
 
-            <div class="btn-group">
-                <button id="filterDueBtn" class="warning" onclick="toggleDueOnlyFilter()">🎯 今日待複習 (<span id="dueCount">0</span>)</button>
-                <button id="upgradeBtn" class="primary" onclick="upgradeOldWords(event)">🔄 批次補齊舊單字</button>
-                <button class="success" onclick="syncToGistCloud()">☁️ 同步至 Gist</button>
-                <button class="primary" onclick="loadFromGistCloud()">📥 從 Gist 載入</button>
-                <button class="secondary" onclick="toggleAllDetails(true)">📂 全部展開</button>
-                <button class="secondary" onclick="toggleAllDetails(false)">📁 全部折疊</button>
-                <button class="secondary" onclick="toggleAllTranslations()">👁️ 切換所有翻譯</button>
-                <button class="secondary" onclick="exportData()">💾 匯出 JSON</button>
-                <button class="secondary" onclick="document.getElementById('fileInput').click()">📥 匯入 JSON</button>
+            <!-- 第二行：雲端與批次工具列 -->
+            <div class="btn-toolbar-group">
+                <button class="primary btn-sm" onclick="upgradeOldWords(event)">🔄 批次補齊</button>
+                <button class="success btn-sm" onclick="syncToGistCloud()">☁️ 同步雲端</button>
+                <button class="primary btn-sm" onclick="loadFromGistCloud()">📥 載入雲端</button>
+                <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
+                <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
+                <button class="secondary btn-sm" onclick="toggleAllTranslations()">👁️ 翻譯</button>
+                <button class="secondary btn-sm" onclick="exportData()">💾 匯出</button>
+                <button class="secondary btn-sm" onclick="document.getElementById('fileInput').click()">📥 匯入</button>
                 <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
             </div>
         </div>
@@ -747,7 +761,9 @@ async function autoSyncToGist() {
                 },
                 body: JSON.stringify({
                     description: description,
-                    files: { [fileName]: { content: content } }
+                    files: {
+                        [fileName]: { content: content }
+                    }
                 })
             });
         }
@@ -824,7 +840,8 @@ async function loadFromGistCloud() {
                         ...currentWords[existingIdx],
                         ...newItem,
                         word: newItem.word,
-                        createdAt: currentWords[existingIdx].createdAt || newItem.createdAt || now
+                        createdAt: currentWords[existingIdx].createdAt || newItem.createdAt || now,
+                        updatedAt: currentWords[existingIdx].updatedAt || newItem.updatedAt || now
                     };
                     updatedCount++;
                 } else {
@@ -934,6 +951,7 @@ function checkAndFixDatabaseWords(words) {
         const nextReviewDate = typeof item.nextReviewDate === 'number' ? item.nextReviewDate : 0;
         const lastReviewedAt = typeof item.lastReviewedAt === 'number' ? item.lastReviewedAt : 0;
         const createdAt = typeof item.createdAt === 'number' ? item.createdAt : Date.now();
+        const updatedAtVal = typeof item.updatedAt === 'number' ? item.updatedAt : undefined;
 
         if (updated || item.mastery === undefined) {
             fixCount++;
@@ -945,7 +963,8 @@ function checkAndFixDatabaseWords(words) {
             mastery: mastery,
             nextReviewDate: nextReviewDate,
             lastReviewedAt: lastReviewedAt,
-            createdAt: createdAt
+            createdAt: createdAt,
+            ...(updatedAtVal ? { updatedAt: updatedAtVal } : {})
         });
     }
 
@@ -1446,7 +1465,8 @@ async function addCurrentToList() {
             words[existingIndex] = {
                 ...words[existingIndex],
                 ...newWordObj,
-                createdAt: words[existingIndex].createdAt || now
+                createdAt: words[existingIndex].createdAt || now,
+                updatedAt: now
             };
             saveWords(words);
             await autoSyncToGist();
@@ -1494,7 +1514,7 @@ function toggleDueOnlyFilter() {
     if (filterDueOnly) {
         btn.classList.remove("warning");
         btn.classList.add("primary");
-        btn.innerHTML = `🎯 顯示全部單字`;
+        btn.innerHTML = `🎯 顯示全部`;
     } else {
         btn.classList.remove("primary");
         btn.classList.add("warning");
@@ -1592,11 +1612,11 @@ async function updateSingleWord(index, btnEvt) {
             newInfo.word = sanitizeWord(newInfo.word);
         }
 
-        // 修改處：保留原本的 createdAt，不更新為 AI 重整後的時間[cite: 7]
         words[index] = {
             ...item,
             ...newInfo,
-            createdAt: item.createdAt
+            createdAt: item.createdAt || Date.now(),
+            updatedAt: item.updatedAt
         };
 
         saveWords(words);
@@ -1677,7 +1697,7 @@ async function upgradeOldWords(evt) {
         const item = words[idx];
         const cleanWord = sanitizeWord(item.word);
 
-        const progressText = `⏳ 補齊中 (${i + 1}/${outdatedIndices.length}): ${cleanWord}`;
+        const progressText = `⏳ (${i + 1}/${outdatedIndices.length}) 補齊中...`;
         if (upgradeBtn) upgradeBtn.innerHTML = progressText;
 
         try {
@@ -1738,11 +1758,11 @@ async function upgradeOldWords(evt) {
                 newInfo.word = sanitizeWord(newInfo.word);
             }
 
-            // 修改處：維持原本的 createdAt，不更新為補齊時的時間[cite: 7]
             words[idx] = {
                 ...item,
                 ...newInfo,
-                createdAt: item.createdAt
+                createdAt: item.createdAt || Date.now(),
+                updatedAt: item.updatedAt
             };
 
             successCount++;
@@ -1757,7 +1777,7 @@ async function upgradeOldWords(evt) {
     if (searchBtn) searchBtn.disabled = false;
     if (upgradeBtn) {
         upgradeBtn.disabled = false;
-        upgradeBtn.innerHTML = "🔄 批次補齊舊單字";
+        upgradeBtn.innerHTML = "🔄 批次補齊";
     }
 
     await autoSyncToGist();
@@ -1806,8 +1826,8 @@ function renderWordList() {
     });
 
     filteredWords.sort((a, b) => {
-        const timeA = a.createdAt || 0;
-        const timeB = b.createdAt || 0;
+        const timeA = a.updatedAt || a.createdAt || 0;
+        const timeB = b.updatedAt || b.createdAt || 0;
         const wordA = a.word.toLowerCase();
         const wordB = b.word.toLowerCase();
 
@@ -1846,8 +1866,7 @@ function renderWordList() {
         const realIndex = words.findIndex(w => w.word.toLowerCase() === item.word.toLowerCase());
         const cleanWord = sanitizeWord(item.word);
 
-        // 修改處：嚴格取用建立時間 createdAt 顯示，不使用 updatedAt[cite: 7]
-        const displayTime = item.createdAt;
+        const displayTime = item.updatedAt || item.createdAt;
         const timeString = displayTime 
             ? new Date(displayTime).toLocaleString('zh-TW', { 
                 year: 'numeric', month: '2-digit', day: '2-digit', 
@@ -2001,7 +2020,8 @@ function importData(event) {
                             ...currentWords[existingIdx],
                             ...newItem,
                             word: newItem.word,
-                            createdAt: currentWords[existingIdx].createdAt || newItem.createdAt || now
+                            createdAt: currentWords[existingIdx].createdAt || newItem.createdAt || now,
+                            updatedAt: currentWords[existingIdx].updatedAt || newItem.updatedAt || now
                         };
                         replacedCount++;
                     } else {
