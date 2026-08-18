@@ -705,8 +705,8 @@ function safeParseJSON(jsonStr) {
 }
 
 /**
- * 🔀 核心合併邏輯：雲端與本地資料庫聯集 (Union)
- * 比較 updatedAt（若無則比較 createdAt），保留最新修改版本。
+ * 🔀 核心合併邏輯：雲端與本地資料庫聯集 (Union) - 支援 Soft Delete
+ * 比較 updatedAt（若無則比較 createdAt），保留時間最新的版本（包括標記為已刪除的紀錄）。
  */
 function mergeDatasets(localList, remoteList) {
     const map = new Map();
@@ -827,8 +827,10 @@ async function performFullSync(interactive = false) {
         localStorage.setItem("last_sync_time", Date.now());
         updateSyncStatusDisplay('success');
 
+        const activeCount = mergedWords.filter(w => !w.isDeleted).length;
+
         if (interactive) {
-            alert(`✅ 雙向同步完成！\n資料庫總計：${mergedWords.length} 個單字\n(Gist ID: ${gistId})`);
+            alert(`✅ 雙向同步完成！\n資料庫有效總計：${activeCount} 個單字\n(Gist ID: ${gistId})`);
         }
     } catch (err) {
         console.error("雙向同步失敗:", err);
@@ -928,6 +930,7 @@ function checkAndFixDatabaseWords(words) {
         const lastReviewedAt = typeof item.lastReviewedAt === 'number' ? item.lastReviewedAt : 0;
         const createdAt = typeof item.createdAt === 'number' ? item.createdAt : Date.now();
         const updatedAtVal = typeof item.updatedAt === 'number' ? item.updatedAt : createdAt;
+        const isDeleted = Boolean(item.isDeleted);
 
         if (updated || item.mastery === undefined) {
             fixCount++;
@@ -940,7 +943,8 @@ function checkAndFixDatabaseWords(words) {
             nextReviewDate: nextReviewDate,
             lastReviewedAt: lastReviewedAt,
             createdAt: createdAt,
-            updatedAt: updatedAtVal
+            updatedAt: updatedAtVal,
+            isDeleted: isDeleted
         });
     }
 
@@ -1433,7 +1437,8 @@ async function addCurrentToList() {
         nextReviewDate: now,
         lastReviewedAt: 0,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        isDeleted: false
     };
 
     if (existingIndex !== -1) {
@@ -1446,7 +1451,8 @@ async function addCurrentToList() {
                 ...words[existingIndex],
                 ...newWordObj,
                 createdAt: words[existingIndex].createdAt || now,
-                updatedAt: now
+                updatedAt: now,
+                isDeleted: false
             };
             saveWords(words);
             alert(`✅ 單字「${currentResultData.word}」已成功覆蓋更新至本地，並觸發雙向同步！`);
@@ -1651,7 +1657,7 @@ async function upgradeOldWords(evt) {
 
     const outdatedIndices = [];
     words.forEach((item, index) => {
-        if (isWordIncomplete(item)) {
+        if (!item.isDeleted && isWordIncomplete(item)) {
             outdatedIndices.push(index);
         }
     });
@@ -1769,7 +1775,10 @@ async function upgradeOldWords(evt) {
 }
 
 function renderWordList() {
-    let words = getWords();
+    let allWords = getWords();
+
+    // 🏆 關鍵：僅處理未被 Soft Delete 的有效單字
+    let activeWords = allWords.filter(item => !item.isDeleted);
 
     const now = Date.now();
     const filterText = document.getElementById("filterInput") ? document.getElementById("filterInput").value.toLowerCase().trim() : "";
@@ -1780,9 +1789,9 @@ function renderWordList() {
 
     updateSyncStatusDisplay('normal');
 
-    const dueWordsList = words.filter(item => !item.nextReviewDate || item.nextReviewDate <= now);
-    const learningWords = words.filter(item => (item.mastery || 0) > 0 && (item.mastery || 0) < 5);
-    const masteredWords = words.filter(item => (item.mastery || 0) === 5);
+    const dueWordsList = activeWords.filter(item => !item.nextReviewDate || item.nextReviewDate <= now);
+    const learningWords = activeWords.filter(item => (item.mastery || 0) > 0 && (item.mastery || 0) < 5);
+    const masteredWords = activeWords.filter(item => (item.mastery || 0) === 5);
 
     if (dueCountSpan) dueCountSpan.textContent = dueWordsList.length;
 
@@ -1793,7 +1802,7 @@ function renderWordList() {
     if (statLearning) statLearning.textContent = learningWords.length;
     if (statMastered) statMastered.textContent = masteredWords.length;
 
-    let filteredWords = words.filter(item => {
+    let filteredWords = activeWords.filter(item => {
         const matchesQuery = item.word.toLowerCase().includes(filterText) || 
                             (item.chinese && item.chinese.toLowerCase().includes(filterText));
         
@@ -1830,7 +1839,7 @@ function renderWordList() {
         return 0;
     });
 
-    countSpan.textContent = `(${filteredWords.length}${filterText || filterDueOnly ? ' / 總計 ' + words.length : ''})`;
+    countSpan.textContent = `(${filteredWords.length}${filterText || filterDueOnly ? ' / 總計 ' + activeWords.length : ''})`;
 
     if (filteredWords.length === 0) {
         if (filterDueOnly) {
@@ -1842,7 +1851,7 @@ function renderWordList() {
     }
 
     wordListDiv.innerHTML = filteredWords.map((item) => {
-        const realIndex = words.findIndex(w => w.word.toLowerCase() === item.word.toLowerCase());
+        const realIndex = allWords.findIndex(w => w.word.toLowerCase() === item.word.toLowerCase());
         const cleanWord = sanitizeWord(item.word);
 
         const displayTime = item.updatedAt || item.createdAt;
@@ -1949,16 +1958,27 @@ function toggleAllDetails(open) {
     document.querySelectorAll('#wordList details').forEach(detail => detail.open = open);
 }
 
+/**
+ * 🗑️ 實作 Soft Delete 刪除邏輯
+ * 標記 isDeleted: true 並更新 updatedAt 時間，確保雙向同步能正確將刪除狀態推送至雲端與其他裝置。
+ */
 async function deleteWord(index) {
     if (confirm("確定要刪除這個單字嗎？")) {
         const words = getWords();
-        words.splice(index, 1);
-        saveWords(words);
+        const now = Date.now();
+        if (words[index]) {
+            words[index] = {
+                ...words[index],
+                isDeleted: true,
+                updatedAt: now
+            };
+            saveWords(words);
+        }
     }
 }
 
 function exportData() {
-    const words = getWords();
+    const words = getWords().filter(item => !item.isDeleted);
     if (words.length === 0) {
         alert("單字庫目前是空的，無法匯出。");
         return;
@@ -1985,7 +2005,8 @@ function importData(event) {
             const merged = mergeDatasets(currentWords, importedWords);
 
             saveWords(merged);
-            alert(`✅ 成功匯入並合併單字庫！總計 ${merged.length} 個單字，已自動同步雲端。`);
+            const activeCount = merged.filter(w => !w.isDeleted).length;
+            alert(`✅ 成功匯入並合併單字庫！總計 ${activeCount} 個有效單字，已自動同步雲端。`);
         } catch (err) {
             console.error(err);
             alert(`匯入失敗：請確認選取的 JSON 檔案格式是否正確。\n錯誤訊息：${err.message}`);
@@ -1995,7 +2016,13 @@ function importData(event) {
     event.target.value = '';
 }
 
-renderWordList();
+// 🚀 頁面載入後自動嘗試雙向同步與初始渲染
+window.addEventListener('DOMContentLoaded', () => {
+    renderWordList();
+    if (getGitHubToken() && getGistId()) {
+        performFullSync(false);
+    }
+});
 </script>
 
 </body>
