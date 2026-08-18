@@ -133,7 +133,6 @@ button:disabled {
 .voice-female { background: #e83e8c; color: white; }
 .voice-male { background: #007bb6; color: white; }
 
-/* 🚀 控制面板與工具列排版樣式 */
 .control-panel {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -471,22 +470,22 @@ details summary:hover {
     <h1>📚 AI TOEIC 全方位單字學習系統 (Gist 雙向自動同步版)</h1>
 
     <div class="card api-box">
-        <details>
+        <details id="settingsDetails">
             <summary>⚙️ 系統與雲端連線設定 (Gemini & GitHub Gist)</summary>
             <div style="margin-top:12px;">
                 <label><strong>🔑 Gemini API Key：</strong></label>
-                <input id="apiKeyInput" type="text" placeholder="貼上您的 Gemini API Key" onchange="saveSettings()">
+                <input id="apiKeyInput" type="text" placeholder="貼上您的 Gemini API Key" onchange="saveSettings(false)">
 
                 <div style="margin-top:12px; border-top: 1px dashed #b6d8ff; padding-top: 10px;">
                     <label><strong>🐙 GitHub Personal Access Token (Gist 權限)：</strong></label>
-                    <input id="githubTokenInput" type="text" placeholder="請輸入帶有 gist 權限的 GitHub Token" onchange="saveSettings()">
+                    <input id="githubTokenInput" type="text" placeholder="請輸入帶有 gist 權限的 GitHub Token" onchange="saveSettings(false)">
                     
-                    <label style="margin-top:8px; display:block;"><strong>📄 GitHub Gist ID：</strong></label>
-                    <input id="gistIdInput" type="text" placeholder="留空則會在首次同步時自動建立新 Gist" onchange="saveSettings()">
+                    <label style="margin-top:8px; display:block;"><strong>📄 GitHub Gist ID (可留空，系統將自動搜尋並綁定)：</strong></label>
+                    <input id="gistIdInput" type="text" placeholder="留空時，系統會在同步時自動尋找已有的 Gist" onchange="saveSettings(false)">
                 </div>
 
                 <div style="margin-top:12px;">
-                    <button class="primary btn-sm" onclick="saveSettings()">💾 儲存設定</button>
+                    <button class="primary btn-sm" onclick="saveSettings(true)">💾 儲存設定並同步</button>
                     <button class="secondary btn-sm" onclick="resetToDefault()">🔄 重置預設值</button>
                 </div>
             </div>
@@ -521,9 +520,7 @@ details summary:hover {
             <span class="stat-badge mastered">🏆 已精通: <span id="statMastered">0</span></span>
         </div>
 
-        <!-- 🚀 結構化控制面板 -->
         <div class="control-panel">
-            <!-- 第一行：搜尋、排序與主篩選器 -->
             <div class="control-row">
                 <div class="search-input-wrap">
                     <input id="filterInput" placeholder="🔍 搜尋已儲存單字..." oninput="handleFilterInput()">
@@ -541,7 +538,6 @@ details summary:hover {
                 <button id="filterDueBtn" class="warning" style="width:auto; min-width:140px; margin:0;" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
             </div>
 
-            <!-- 第二行：雙向同步與批次工具列 -->
             <div class="btn-toolbar-group">
                 <button class="success btn-sm" onclick="performFullSync(true)">🔄 雙向同步</button>
                 <button class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 批次補齊</button>
@@ -586,35 +582,36 @@ function updateSyncStatusDisplay(type = 'normal') {
     const lastSync = localStorage.getItem("last_sync_time");
     
     let timeStr = lastSync ? new Date(parseInt(lastSync)).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '從未同步';
-    
+    let shortGist = gistId ? ` (ID: ...${gistId.slice(-6)})` : '';
+
     if (!token) {
         infoEl.innerHTML = `⚠️ 雲端狀態：未設定 GitHub Token`;
         infoEl.style.borderColor = '#fcd34d';
         infoEl.style.background = '#fffbeb';
         infoEl.style.color = '#92400e';
     } else if (!gistId) {
-        infoEl.innerHTML = `⚠️ 雲端狀態：尚未建立 Gist`;
+        infoEl.innerHTML = `⚠️ 雲端狀態：未綁定 Gist (同步時將自動尋找/建立)`;
         infoEl.style.borderColor = '#fcd34d';
         infoEl.style.background = '#fffbeb';
         infoEl.style.color = '#92400e';
     } else {
         if (type === 'syncing') {
-            infoEl.innerHTML = `🔄 雲端狀態：同步中...`;
+            infoEl.innerHTML = `🔄 雲端狀態：同步中...${shortGist}`;
             infoEl.style.borderColor = '#93c5fd';
             infoEl.style.background = '#eff6ff';
             infoEl.style.color = '#1d4ed8';
         } else if (type === 'success') {
-            infoEl.innerHTML = `✅ 雲端狀態：已雙向同步 (${timeStr})`;
+            infoEl.innerHTML = `✅ 雲端狀態：已同步 (${timeStr})${shortGist}`;
             infoEl.style.borderColor = '#bbf7d0';
             infoEl.style.background = '#f0fdf4';
             infoEl.style.color = '#15803d';
         } else if (type === 'error') {
-            infoEl.innerHTML = `❌ 雲端狀態：同步失敗`;
+            infoEl.innerHTML = `❌ 雲端狀態：同步失敗${shortGist}`;
             infoEl.style.borderColor = '#fecaca';
             infoEl.style.background = '#fef2f2';
             infoEl.style.color = '#b91c1c';
         } else {
-            infoEl.innerHTML = `☁️ 雲端狀態：已就緒 (上次同步: ${timeStr})`;
+            infoEl.innerHTML = `☁️ 雲端狀態：已就緒 (${timeStr})${shortGist}`;
             infoEl.style.borderColor = '#e2e8f0';
             infoEl.style.background = '#f8fafc';
             infoEl.style.color = '#475569';
@@ -622,7 +619,7 @@ function updateSyncStatusDisplay(type = 'normal') {
     }
 }
 
-function saveSettings() {
+async function saveSettings(interactive = true) {
     const key = document.getElementById("apiKeyInput").value.trim();
     const token = document.getElementById("githubTokenInput").value.trim();
     const gistId = document.getElementById("gistIdInput").value.trim();
@@ -631,7 +628,12 @@ function saveSettings() {
     localStorage.setItem("github_token", token);
     localStorage.setItem("gist_id", gistId);
     updateSyncStatusDisplay();
-    alert("✅ 系統與雲端設定已儲存至本地！");
+    
+    if (token && interactive) {
+        await performFullSync(true);
+    } else if (interactive) {
+        alert("✅ 系統設定已儲存至本地！");
+    }
 }
 
 function resetToDefault() {
@@ -652,7 +654,6 @@ document.getElementById("apiKeyInput").value = getApiKey();
 document.getElementById("githubTokenInput").value = getGitHubToken();
 document.getElementById("gistIdInput").value = getGistId();
 
-// 🛡️ JSON 解析器 (支援未終止引號與毀損區塊挽救)
 function safeParseJSON(jsonStr) {
     if (!jsonStr) throw new Error("傳入的資料內容為空");
     try {
@@ -705,8 +706,7 @@ function safeParseJSON(jsonStr) {
 }
 
 /**
- * 🔀 核心合併邏輯：雲端與本地資料庫聯集 (Union) - 支援 Soft Delete
- * 比較 updatedAt（若無則比較 createdAt），保留時間最新的版本（包括標記為已刪除的紀錄）。
+ * 🔀 核心合併邏輯：聯集合併並以最新的 updatedAt 判斷
  */
 function mergeDatasets(localList, remoteList) {
     const map = new Map();
@@ -716,31 +716,30 @@ function mergeDatasets(localList, remoteList) {
         const cleanName = sanitizeWord(item.word);
         const key = cleanName.toLowerCase();
         
-        const itemTime = item.updatedAt || item.createdAt || 0;
+        const itemTime = item.updatedAt || item.createdAt || 1;
 
         if (!map.has(key)) {
-            map.set(key, { ...item, word: cleanName });
+            map.set(key, { ...item, word: cleanName, updatedAt: itemTime });
         } else {
             const existing = map.get(key);
-            const existingTime = existing.updatedAt || existing.createdAt || 0;
+            const existingTime = existing.updatedAt || existing.createdAt || 1;
 
-            if (itemTime > existingTime) {
-                map.set(key, { ...existing, ...item, word: cleanName });
+            if (itemTime >= existingTime) {
+                map.set(key, { ...existing, ...item, word: cleanName, updatedAt: itemTime });
             } else {
-                map.set(key, { ...item, ...existing, word: cleanName });
+                map.set(key, { ...item, ...existing, word: cleanName, updatedAt: existingTime });
             }
         }
     };
 
-    localList.forEach(processItem);
-    remoteList.forEach(processItem);
+    (Array.isArray(localList) ? localList : []).forEach(processItem);
+    (Array.isArray(remoteList) ? remoteList : []).forEach(processItem);
 
     return Array.from(map.values());
 }
 
 /**
- * 🔄 完整雙向同步流程 (Full Two-Way Sync)
- * 先讀取雲端 $\rightarrow$ 進行聯集合併 $\rightarrow$ 寫回本地 $\rightarrow$ 更新上傳至雲端
+ * 🔄 完整雙向同步流程 (含自動尋找已有 Gist 功能)
  */
 async function performFullSync(interactive = false) {
     const token = getGitHubToken();
@@ -757,7 +756,25 @@ async function performFullSync(interactive = false) {
     let remoteWords = [];
 
     try {
-        // 1. 若已有 Gist ID，先從雲端下載最新資料
+        // 🔍 防重複創建核心：若沒設定 Gist ID，先向 GitHub 查詢是否已有備份檔 Gist
+        if (!gistId) {
+            const listRes = await fetch("https://api.github.com/gists?per_page=100", {
+                method: "GET",
+                headers: { "Authorization": `token ${token}` }
+            });
+            if (listRes.ok) {
+                const gists = await listRes.json();
+                const existingGist = gists.find(g => g.files && g.files[fileName]);
+                if (existingGist) {
+                    gistId = existingGist.id;
+                    localStorage.setItem("gist_id", gistId);
+                    const gistInput = document.getElementById("gistIdInput");
+                    if (gistInput) gistInput.value = gistId;
+                }
+            }
+        }
+
+        // 1. 下載雲端資料
         if (gistId) {
             const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
                 method: "GET",
@@ -773,14 +790,14 @@ async function performFullSync(interactive = false) {
             }
         }
 
-        // 2. 執行核心聯集合併 (Merge)
+        // 2. 聯集合併
         const localWords = getWords();
         const mergedWords = mergeDatasets(localWords, remoteWords);
 
-        // 3. 寫回 LocalStorage 本地儲存庫
-        saveWords(mergedWords, false); // 不觸發遞迴
+        // 3. 寫回本地
+        saveWords(mergedWords, false);
 
-        // 4. 上傳合併後的最新資料至雲端 Gist
+        // 4. 上傳更新至雲端 Gist
         const content = JSON.stringify(mergedWords, null, 2);
         let pushRes;
 
@@ -932,7 +949,7 @@ function checkAndFixDatabaseWords(words) {
         const updatedAtVal = typeof item.updatedAt === 'number' ? item.updatedAt : createdAt;
         const isDeleted = Boolean(item.isDeleted);
 
-        if (updated || item.mastery === undefined) {
+        if (updated || item.mastery === undefined || item.updatedAt === undefined) {
             fixCount++;
         }
 
@@ -1777,7 +1794,6 @@ async function upgradeOldWords(evt) {
 function renderWordList() {
     let allWords = getWords();
 
-    // 🏆 關鍵：僅處理未被 Soft Delete 的有效單字
     let activeWords = allWords.filter(item => !item.isDeleted);
 
     const now = Date.now();
@@ -1958,10 +1974,6 @@ function toggleAllDetails(open) {
     document.querySelectorAll('#wordList details').forEach(detail => detail.open = open);
 }
 
-/**
- * 🗑️ 實作 Soft Delete 刪除邏輯
- * 標記 isDeleted: true 並更新 updatedAt 時間，確保雙向同步能正確將刪除狀態推送至雲端與其他裝置。
- */
 async function deleteWord(index) {
     if (confirm("確定要刪除這個單字嗎？")) {
         const words = getWords();
@@ -2016,10 +2028,19 @@ function importData(event) {
     event.target.value = '';
 }
 
+// 📱 喚醒分頁 / 切換網頁時自動同步
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        if (getGitHubToken()) {
+            performFullSync(false);
+        }
+    }
+});
+
 // 🚀 頁面載入後自動嘗試雙向同步與初始渲染
 window.addEventListener('DOMContentLoaded', () => {
     renderWordList();
-    if (getGitHubToken() && getGistId()) {
+    if (getGitHubToken()) {
         performFullSync(false);
     }
 });
