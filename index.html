@@ -784,24 +784,29 @@ async function performFullSync(interactive = false) {
             }
         }
 
-        // 1. 下載雲端資料
+		// 1. 下載雲端資料（含防截斷與防快取處理）
         if (gistId) {
             const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
                 method: "GET",
-                headers: { 
-                    "Authorization": `token ${token}`
-                }
+                headers: { "Authorization": `token ${token}` }
             });
 
-            if (getRes.ok) {
-                const gistData = await getRes.json();
-                const file = gistData.files[fileName] || Object.values(gistData.files)[0];
-                if (file && file.content) {
-                    remoteWords = safeParseJSON(file.content);
-                }
-            }
-        }
-
+			if (getRes.ok) {
+				const gistData = await getRes.json();
+				const file = gistData.files[fileName] || Object.values(gistData.files)[0];
+				if (file) {
+					let contentStr = file.content;
+					// 若 Gist 內容被 GitHub 截斷，強制抓取 raw_url 完整資料
+					if (file.truncated && file.raw_url) {
+						const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
+						contentStr = await rawRes.text();
+				}
+				if (contentStr) {
+					remoteWords = safeParseJSON(contentStr);
+					}
+				}
+			}
+		}
         // 2. 進行雙向聯集合併
         const localWords = getWords();
         const mergedWords = mergeDatasets(localWords, remoteWords);
