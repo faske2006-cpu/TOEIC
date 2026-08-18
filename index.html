@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>AI TOEIC 全方位單字學習與 SRS 複習系統 (Gist 雲端同步版)</title>
+<title>AI TOEIC 全方位單字學習與 SRS 複習系統 (Gist 雙向自動同步版)</title>
 
 <style>
 * {
@@ -133,7 +133,7 @@ button:disabled {
 .voice-female { background: #e83e8c; color: white; }
 .voice-male { background: #007bb6; color: white; }
 
-/* 🚀 優化後的控制面板與工具列排版樣式 */
+/* 🚀 控制面板與工具列排版樣式 */
 .control-panel {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -195,7 +195,7 @@ button:disabled {
 
 .btn-toolbar-group button {
     flex: 1;
-    min-width: 120px;
+    min-width: 110px;
     margin: 0;
 }
 
@@ -468,7 +468,7 @@ details summary:hover {
 <body>
 
 <div class="container">
-    <h1>📚 AI TOEIC 全方位單字學習系統 (Gist 雲端同步版)</h1>
+    <h1>📚 AI TOEIC 全方位單字學習系統 (Gist 雙向自動同步版)</h1>
 
     <div class="card api-box">
         <details>
@@ -521,7 +521,7 @@ details summary:hover {
             <span class="stat-badge mastered">🏆 已精通: <span id="statMastered">0</span></span>
         </div>
 
-        <!-- 🚀 結構化優化後的控制面板 -->
+        <!-- 🚀 結構化控制面板 -->
         <div class="control-panel">
             <!-- 第一行：搜尋、排序與主篩選器 -->
             <div class="control-row">
@@ -541,11 +541,10 @@ details summary:hover {
                 <button id="filterDueBtn" class="warning" style="width:auto; min-width:140px; margin:0;" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
             </div>
 
-            <!-- 第二行：雲端與批次工具列 -->
+            <!-- 第二行：雙向同步與批次工具列 -->
             <div class="btn-toolbar-group">
-                <button class="primary btn-sm" onclick="upgradeOldWords(event)">🔄 批次補齊</button>
-                <button class="success btn-sm" onclick="syncToGistCloud()">☁️ 同步雲端</button>
-                <button class="primary btn-sm" onclick="loadFromGistCloud()">📥 載入雲端</button>
+                <button class="success btn-sm" onclick="performFullSync(true)">🔄 雙向同步</button>
+                <button class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 批次補齊</button>
                 <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
                 <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
                 <button class="secondary btn-sm" onclick="toggleAllTranslations()">👁️ 翻譯</button>
@@ -561,10 +560,10 @@ details summary:hover {
 
 <script>
 const DEFAULT_API_KEY = "AQ.Ab8RN6LpVQW9YcWDK5DeBWkqgnarqq-bxoKSDYjaQWmGHFRYsQ";
-
 const SRS_INTERVALS = [0, 1, 3, 7, 14, 30];
 
 let filterDueOnly = false;
+let currentResultData = null;
 
 function getApiKey() {
     return localStorage.getItem("gemini_api_key") || DEFAULT_API_KEY;
@@ -605,7 +604,7 @@ function updateSyncStatusDisplay(type = 'normal') {
             infoEl.style.background = '#eff6ff';
             infoEl.style.color = '#1d4ed8';
         } else if (type === 'success') {
-            infoEl.innerHTML = `✅ 雲端狀態：已同步 (${timeStr})`;
+            infoEl.innerHTML = `✅ 雲端狀態：已雙向同步 (${timeStr})`;
             infoEl.style.borderColor = '#bbf7d0';
             infoEl.style.background = '#f0fdf4';
             infoEl.style.color = '#15803d';
@@ -653,149 +652,15 @@ document.getElementById("apiKeyInput").value = getApiKey();
 document.getElementById("githubTokenInput").value = getGitHubToken();
 document.getElementById("gistIdInput").value = getGistId();
 
-let currentResultData = null;
-
-async function syncToGistCloud() {
-    const token = getGitHubToken();
-    if (!token) {
-        alert("請先在「系統連線設定」中填寫您的 GitHub Personal Access Token！");
-        return;
-    }
-
-    updateSyncStatusDisplay('syncing');
-
-    const words = getWords();
-    const content = JSON.stringify(words, null, 2);
-    let gistId = getGistId();
-
-    const fileName = "toeic_vocab_db.json";
-    const description = "AI TOEIC 全方位單字學習系統 - 單字資料庫備份";
-
-    try {
-        let response;
-        if (!gistId) {
-            response = await fetch("https://api.github.com/gists", {
-                method: "POST",
-                headers: {
-                    "Authorization": `token ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    description: description,
-                    public: false,
-                    files: {
-                        [fileName]: { content: content }
-                    }
-                })
-            });
-        } else {
-            response = await fetch(`https://api.github.com/gists/${gistId}`, {
-                method: "PATCH",
-                headers: {
-                    "Authorization": `token ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    description: description,
-                    files: {
-                        [fileName]: { content: content }
-                    }
-                })
-            });
-        }
-
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.message || "GitHub API 回應錯誤");
-        }
-
-        const data = await response.json();
-        if (!gistId) {
-            gistId = data.id;
-            localStorage.setItem("gist_id", gistId);
-            document.getElementById("gistIdInput").value = gistId;
-        }
-
-        localStorage.setItem("last_sync_time", Date.now());
-        updateSyncStatusDisplay('success');
-        alert(`☁️ 成功同步至 GitHub Gist！\nGist ID: ${gistId}`);
-    } catch (err) {
-        console.error("Gist 同步失敗:", err);
-        updateSyncStatusDisplay('error');
-        alert(`❌ 同步至 Gist 失敗：${err.message}`);
-    }
-}
-
-async function autoSyncToGist() {
-    const token = getGitHubToken();
-    if (!token) return;
-
-    const words = getWords();
-    const content = JSON.stringify(words, null, 2);
-    let gistId = getGistId();
-
-    const fileName = "toeic_vocab_db.json";
-    const description = "AI TOEIC 全方位單字學習系統 - 單字資料庫備份";
-
-    try {
-        let response;
-        if (!gistId) {
-            response = await fetch("https://api.github.com/gists", {
-                method: "POST",
-                headers: {
-                    "Authorization": `token ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    description: description,
-                    public: false,
-                    files: { [fileName]: { content: content } }
-                })
-            });
-        } else {
-            response = await fetch(`https://api.github.com/gists/${gistId}`, {
-                method: "PATCH",
-                headers: {
-                    "Authorization": `token ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    description: description,
-                    files: {
-                        [fileName]: { content: content }
-                    }
-                })
-            });
-        }
-
-        if (response.ok) {
-            const data = await response.json();
-            if (!gistId) {
-                gistId = data.id;
-                localStorage.setItem("gist_id", gistId);
-                const gistInput = document.getElementById("gistIdInput");
-                if (gistInput) gistInput.value = gistId;
-            }
-            localStorage.setItem("last_sync_time", Date.now());
-            updateSyncStatusDisplay('success');
-        }
-    } catch (err) {
-        console.error("自動同步 Gist 失敗:", err);
-    }
-}
-
-// 🛡️ 升級版超強固型 JSON 解析器（自動修復未終止引號、換行與區塊物件挽救）
+// 🛡️ JSON 解析器 (支援未終止引號與毀損區塊挽救)
 function safeParseJSON(jsonStr) {
     if (!jsonStr) throw new Error("傳入的資料內容為空");
-    
-    // 1. 嘗試直接解析
     try {
         return JSON.parse(jsonStr);
     } catch (e1) {
-        console.warn("直接解析 JSON 失敗，啟動智慧修復機制...", e1);
+        console.warn("直接解析 JSON 失敗，啟動修復機制...", e1);
     }
 
-    // 2. 基礎清理：移除控制字元、結尾逗號、處理換行
     try {
         let cleaned = jsonStr
             .replace(/\r?\n/g, " ")
@@ -803,10 +668,9 @@ function safeParseJSON(jsonStr) {
             .replace(/,\s*([}\]])/g, '$1');
         return JSON.parse(cleaned);
     } catch (e2) {
-        console.warn("基礎清理後解析失敗，嘗試物件區塊深度挽救...", e2);
+        console.warn("基礎清理後解析失敗，嘗試深度物件挽救...", e2);
     }
 
-    // 3. 深度區塊物件挽救模式：針對含有未跳脫引號或局部損壞的陣列字串，逐一提取合法物件
     try {
         let trimmed = jsonStr.trim();
         if (trimmed.startsWith('[')) {
@@ -822,110 +686,156 @@ function safeParseJSON(jsonStr) {
                     if (depth === 0 && start !== -1) {
                         let objStr = trimmed.slice(start, i + 1);
                         try {
-                            // 清理單一物件內的換行與格式後解析
                             let fixedObjStr = objStr.replace(/\r?\n/g, " ").replace(/[\u0000-\u001F]+/g, " ");
                             let parsedObj = JSON.parse(fixedObjStr);
                             if (parsedObj && parsedObj.word) {
                                 objects.push(parsedObj);
                             }
-                        } catch (errObj) {
-                            // 若該物件內部引號損壞嚴重，嘗試粗略修復常見欄位
-                            try {
-                                // 嘗試略過或容錯
-                            } catch (e) {}
-                        }
+                        } catch (e) {}
                         start = -1;
                     }
                 }
             }
-            if (objects.length > 0) {
-                console.info(`🛡️ JSON 智慧挽救成功：成功從損壞資料中救回 ${objects.length} 個單字物件！`);
-                return objects;
-            }
+            if (objects.length > 0) return objects;
         }
-        throw new Error("無法解析與修復的 JSON 格式");
+        throw new Error("無法解析的 JSON 格式");
     } catch (e3) {
-        console.error("JSON 最終修復解析失敗:", e3);
-        throw new Error(`JSON 解析失敗: 內容包含無法自動修復的語法錯誤 (${e1.message})`);
+        throw new Error(`JSON 解析失敗: (${e1.message})`);
     }
 }
 
-async function loadFromGistCloud() {
+/**
+ * 🔀 核心合併邏輯：雲端與本地資料庫聯集 (Union)
+ * 比較 updatedAt（若無則比較 createdAt），保留最新修改版本。
+ */
+function mergeDatasets(localList, remoteList) {
+    const map = new Map();
+
+    const processItem = (item) => {
+        if (!item || !item.word) return;
+        const cleanName = sanitizeWord(item.word);
+        const key = cleanName.toLowerCase();
+        
+        const itemTime = item.updatedAt || item.createdAt || 0;
+
+        if (!map.has(key)) {
+            map.set(key, { ...item, word: cleanName });
+        } else {
+            const existing = map.get(key);
+            const existingTime = existing.updatedAt || existing.createdAt || 0;
+
+            if (itemTime > existingTime) {
+                map.set(key, { ...existing, ...item, word: cleanName });
+            } else {
+                map.set(key, { ...item, ...existing, word: cleanName });
+            }
+        }
+    };
+
+    localList.forEach(processItem);
+    remoteList.forEach(processItem);
+
+    return Array.from(map.values());
+}
+
+/**
+ * 🔄 完整雙向同步流程 (Full Two-Way Sync)
+ * 先讀取雲端 $\rightarrow$ 進行聯集合併 $\rightarrow$ 寫回本地 $\rightarrow$ 更新上傳至雲端
+ */
+async function performFullSync(interactive = false) {
     const token = getGitHubToken();
-    const gistId = getGistId();
-
-    if (!token || !gistId) {
-        alert("請先在「系統連線設定」中填寫 GitHub Token 與 Gist ID！");
+    if (!token) {
+        if (interactive) alert("請先在「系統連線設定」中填寫您的 GitHub Personal Access Token！");
         return;
     }
 
-    if (!confirm("從雲端載入將會與本地單字庫進行合併或覆蓋，確定要執行嗎？")) {
-        return;
-    }
+    updateSyncStatusDisplay('syncing');
 
+    let gistId = getGistId();
     const fileName = "toeic_vocab_db.json";
+    const description = "AI TOEIC 全方位單字學習系統 - 單字資料庫備份";
+    let remoteWords = [];
 
     try {
-        updateSyncStatusDisplay('syncing');
-        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
-            method: "GET",
-            headers: {
-                "Authorization": `token ${token}`
-            }
-        });
+        // 1. 若已有 Gist ID，先從雲端下載最新資料
+        if (gistId) {
+            const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
+                method: "GET",
+                headers: { "Authorization": `token ${token}` }
+            });
 
-        if (!response.ok) {
-            throw new Error("無法讀取指定的 Gist，請確認 Gist ID 與 Token 是否正確。");
-        }
-
-        const data = await response.json();
-        const file = data.files[fileName] || Object.values(data.files)[0];
-
-        if (!file || !file.content) {
-            throw new Error("Gist 中找不到有效的單字資料檔案。");
-        }
-
-        const remoteWords = safeParseJSON(file.content);
-        if (!Array.isArray(remoteWords)) {
-            throw new Error("Gist 內的資料格式不符合單字清單陣列。");
-        }
-
-        const currentWords = getWords();
-        let addedCount = 0;
-        let updatedCount = 0;
-        const now = Date.now();
-
-        remoteWords.forEach(newItem => {
-            if (newItem && newItem.word) {
-                newItem.word = sanitizeWord(newItem.word);
-                const lowerWord = newItem.word.toLowerCase();
-                const existingIdx = currentWords.findIndex(w => w.word.toLowerCase() === lowerWord);
-
-                if (existingIdx !== -1) {
-                    currentWords[existingIdx] = {
-                        ...currentWords[existingIdx],
-                        ...newItem,
-                        word: newItem.word,
-                        createdAt: currentWords[existingIdx].createdAt || newItem.createdAt || now,
-                        updatedAt: currentWords[existingIdx].updatedAt || newItem.updatedAt || now
-                    };
-                    updatedCount++;
-                } else {
-                    if (!newItem.createdAt) newItem.createdAt = now;
-                    currentWords.push(newItem);
-                    addedCount++;
+            if (getRes.ok) {
+                const gistData = await getRes.json();
+                const file = gistData.files[fileName] || Object.values(gistData.files)[0];
+                if (file && file.content) {
+                    remoteWords = safeParseJSON(file.content);
                 }
             }
-        });
+        }
 
-        saveWords(currentWords);
+        // 2. 執行核心聯集合併 (Merge)
+        const localWords = getWords();
+        const mergedWords = mergeDatasets(localWords, remoteWords);
+
+        // 3. 寫回 LocalStorage 本地儲存庫
+        saveWords(mergedWords, false); // 不觸發遞迴
+
+        // 4. 上傳合併後的最新資料至雲端 Gist
+        const content = JSON.stringify(mergedWords, null, 2);
+        let pushRes;
+
+        if (!gistId) {
+            pushRes = await fetch("https://api.github.com/gists", {
+                method: "POST",
+                headers: {
+                    "Authorization": `token ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    description: description,
+                    public: false,
+                    files: { [fileName]: { content: content } }
+                })
+            });
+        } else {
+            pushRes = await fetch(`https://api.github.com/gists/${gistId}`, {
+                method: "PATCH",
+                headers: {
+                    "Authorization": `token ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    description: description,
+                    files: { [fileName]: { content: content } }
+                })
+            });
+        }
+
+        if (!pushRes.ok) {
+            const errData = await pushRes.json();
+            throw new Error(errData.message || "GitHub API 回應失敗");
+        }
+
+        const pushData = await pushRes.json();
+        if (!gistId) {
+            gistId = pushData.id;
+            localStorage.setItem("gist_id", gistId);
+            const gistInput = document.getElementById("gistIdInput");
+            if (gistInput) gistInput.value = gistId;
+        }
+
         localStorage.setItem("last_sync_time", Date.now());
         updateSyncStatusDisplay('success');
-        alert(`📥 成功從 Gist 載入資料！\n新增 ${addedCount} 個單字，更新 ${updatedCount} 個單字。`);
+
+        if (interactive) {
+            alert(`✅ 雙向同步完成！\n資料庫總計：${mergedWords.length} 個單字\n(Gist ID: ${gistId})`);
+        }
     } catch (err) {
-        console.error("Gist 載入失敗:", err);
+        console.error("雙向同步失敗:", err);
         updateSyncStatusDisplay('error');
-        alert(`❌ 從 Gist 載入失敗：${err.message}`);
+        if (interactive) {
+            alert(`❌ 雙向同步失敗：${err.message}`);
+        }
     }
 }
 
@@ -1017,7 +927,7 @@ function checkAndFixDatabaseWords(words) {
         const nextReviewDate = typeof item.nextReviewDate === 'number' ? item.nextReviewDate : 0;
         const lastReviewedAt = typeof item.lastReviewedAt === 'number' ? item.lastReviewedAt : 0;
         const createdAt = typeof item.createdAt === 'number' ? item.createdAt : Date.now();
-        const updatedAtVal = typeof item.updatedAt === 'number' ? item.updatedAt : undefined;
+        const updatedAtVal = typeof item.updatedAt === 'number' ? item.updatedAt : createdAt;
 
         if (updated || item.mastery === undefined) {
             fixCount++;
@@ -1030,7 +940,7 @@ function checkAndFixDatabaseWords(words) {
             nextReviewDate: nextReviewDate,
             lastReviewedAt: lastReviewedAt,
             createdAt: createdAt,
-            ...(updatedAtVal ? { updatedAt: updatedAtVal } : {})
+            updatedAt: updatedAtVal
         });
     }
 
@@ -1087,10 +997,13 @@ function getWords() {
     return checkAndFixDatabaseWords(raw);
 }
 
-function saveWords(words) {
+function saveWords(words, autoSync = true) {
     const cleanedWords = checkAndFixDatabaseWords(words);
     localStorage.setItem("vocabDB", JSON.stringify(cleanedWords));
     renderWordList();
+    if (autoSync) {
+        performFullSync(false);
+    }
 }
 
 function handleKeyDown(event) {
@@ -1500,7 +1413,7 @@ function renderCardHTML(item, isSearchResult = false) {
                 ${ex2HTML}
                 ${ex3HTML}
             </div>
-            ${isSearchResult ? `<button class="primary" style="width:100%; margin-top:10px;" onclick="addCurrentToList()">➕ 保存到我的單字庫(自動同步雲端)</button>` : ''}
+            ${isSearchResult ? `<button class="primary" style="width:100%; margin-top:10px;" onclick="addCurrentToList()">➕ 保存到我的單字庫 (雙向自動同步)</button>` : ''}
         </div>
     `;
 }
@@ -1519,7 +1432,8 @@ async function addCurrentToList() {
         mastery: 0,
         nextReviewDate: now,
         lastReviewedAt: 0,
-        createdAt: now
+        createdAt: now,
+        updatedAt: now
     };
 
     if (existingIndex !== -1) {
@@ -1535,16 +1449,14 @@ async function addCurrentToList() {
                 updatedAt: now
             };
             saveWords(words);
-            await autoSyncToGist();
-            alert(`✅ 單字「${currentResultData.word}」已成功覆蓋更新至本地，並已自動同步至雲端！`);
+            alert(`✅ 單字「${currentResultData.word}」已成功覆蓋更新至本地，並觸發雙向同步！`);
         }
         return;
     }
 
     words.unshift(newWordObj);
     saveWords(words);
-    await autoSyncToGist();
-    alert("✅ 已成功儲存到我的單字庫並自動同步至雲端！");
+    alert("✅ 已成功儲存至單字庫，並已自動執行雙向同步！");
 }
 
 function markMastery(realIndex, isRemembered) {
@@ -1568,7 +1480,8 @@ function markMastery(realIndex, isRemembered) {
         ...item,
         mastery: currentLevel,
         nextReviewDate: nextDate,
-        lastReviewedAt: now
+        lastReviewedAt: now,
+        updatedAt: now
     };
 
     saveWords(words);
@@ -1678,16 +1591,16 @@ async function updateSingleWord(index, btnEvt) {
             newInfo.word = sanitizeWord(newInfo.word);
         }
 
+        const now = Date.now();
         words[index] = {
             ...item,
             ...newInfo,
-            createdAt: item.createdAt || Date.now(),
-            updatedAt: item.updatedAt
+            createdAt: item.createdAt || now,
+            updatedAt: now
         };
 
         saveWords(words);
-        await autoSyncToGist();
-        alert(`✅ 單字「${cleanWord}」已成功 AI 重整更新、儲存至本地並自動同步至雲端！`);
+        alert(`✅ 單字「${cleanWord}」已成功 AI 重整更新，並自動觸發雙向同步！`);
 
     } catch (err) {
         console.error(`更新單字 [${cleanWord}] 失敗:`, err);
@@ -1744,16 +1657,16 @@ async function upgradeOldWords(evt) {
     });
 
     if (outdatedIndices.length === 0) {
-        alert("🎉 您的單字庫中所有單字都已經擁有完整資訊與 3 個例句！");
+        alert("🎉 您的單字庫中所有單字都已經擁有完整資訊！");
         return;
     }
 
-    if (!confirm(`檢測到有 ${outdatedIndices.length} 個單字資訊尚不完整或缺乏 3 個例句等新功能欄位。\n是否開始自動補齊完整內容？`)) return;
+    if (!confirm(`檢測到有 ${outdatedIndices.length} 個單字資訊尚不完整。\n是否開始自動補齊？`)) return;
 
     let successCount = 0;
     let failedWords = [];
     const searchBtn = document.getElementById("searchBtn");
-    const upgradeBtn = document.getElementById("upgradeBtn") || (evt ? evt.currentTarget : null);
+    const upgradeBtn = evt ? evt.currentTarget : null;
 
     if (searchBtn) searchBtn.disabled = true;
     if (upgradeBtn) upgradeBtn.disabled = true;
@@ -1763,8 +1676,7 @@ async function upgradeOldWords(evt) {
         const item = words[idx];
         const cleanWord = sanitizeWord(item.word);
 
-        const progressText = `⏳ (${i + 1}/${outdatedIndices.length}) 補齊中...`;
-        if (upgradeBtn) upgradeBtn.innerHTML = progressText;
+        if (upgradeBtn) upgradeBtn.innerHTML = `⏳ (${i + 1}/${outdatedIndices.length}) 補齊中...`;
 
         try {
             if (i > 0) {
@@ -1824,15 +1736,16 @@ async function upgradeOldWords(evt) {
                 newInfo.word = sanitizeWord(newInfo.word);
             }
 
+            const now = Date.now();
             words[idx] = {
                 ...item,
                 ...newInfo,
-                createdAt: item.createdAt || Date.now(),
-                updatedAt: item.updatedAt
+                createdAt: item.createdAt || now,
+                updatedAt: now
             };
 
             successCount++;
-            saveWords(words);
+            saveWords(words, false);
 
         } catch (err) {
             console.error(`補齊單字 [${cleanWord}] 失敗:`, err);
@@ -1843,13 +1756,13 @@ async function upgradeOldWords(evt) {
     if (searchBtn) searchBtn.disabled = false;
     if (upgradeBtn) {
         upgradeBtn.disabled = false;
-        upgradeBtn.innerHTML = "🔄 批次補齊";
+        upgradeBtn.innerHTML = "⚡ 批次補齊";
     }
 
-    await autoSyncToGist();
+    await performFullSync(false);
 
     if (failedWords.length === 0) {
-        alert(`🎉 補全作業完成！成功為 ${successCount} 個單字補齊完整資訊、儲存至本地並自動同步至雲端。`);
+        alert(`🎉 補全作業完成！成功為 ${successCount} 個單字補齊完整資訊，並自動執行雙向同步。`);
     } else {
         alert(`⚠️ 補全作業結束：\n✅ 成功：${successCount} 個\n❌ 失敗：${failedWords.length} 個（${failedWords.join(', ')}）`);
     }
@@ -2041,7 +1954,6 @@ async function deleteWord(index) {
         const words = getWords();
         words.splice(index, 1);
         saveWords(words);
-        await autoSyncToGist();
     }
 }
 
@@ -2070,37 +1982,10 @@ function importData(event) {
             if (!Array.isArray(importedWords)) throw new Error("檔案格式不符合 JSON 陣列");
             
             const currentWords = getWords();
-            let addedCount = 0;
-            let replacedCount = 0;
-            const now = Date.now();
+            const merged = mergeDatasets(currentWords, importedWords);
 
-            importedWords.forEach(newItem => {
-                if (newItem && newItem.word) {
-                    newItem.word = sanitizeWord(newItem.word);
-                    const lowerNewWord = newItem.word.toLowerCase();
-                    
-                    const existingIdx = currentWords.findIndex(w => w.word.toLowerCase() === lowerNewWord);
-                    
-                    if (existingIdx !== -1) {
-                        currentWords[existingIdx] = {
-                            ...currentWords[existingIdx],
-                            ...newItem,
-                            word: newItem.word,
-                            createdAt: currentWords[existingIdx].createdAt || newItem.createdAt || now,
-                            updatedAt: currentWords[existingIdx].updatedAt || newItem.updatedAt || now
-                        };
-                        replacedCount++;
-                    } else {
-                        if (!newItem.createdAt) newItem.createdAt = now;
-                        currentWords.push(newItem);
-                        addedCount++;
-                    }
-                }
-            });
-
-            saveWords(currentWords);
-            await autoSyncToGist();
-            alert(`✅ 成功匯入！新增 ${addedCount} 個單字，取代更新 ${replacedCount} 個重複單字，並已儲存至本地並自動同步至雲端！`);
+            saveWords(merged);
+            alert(`✅ 成功匯入並合併單字庫！總計 ${merged.length} 個單字，已自動同步雲端。`);
         } catch (err) {
             console.error(err);
             alert(`匯入失敗：請確認選取的 JSON 檔案格式是否正確。\n錯誤訊息：${err.message}`);
