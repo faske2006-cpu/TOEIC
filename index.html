@@ -745,7 +745,7 @@ function mergeDatasets(localList, remoteList) {
 }
 
 /**
- * 🔄 完整雙向同步流程 (禁止 HTTP GET 快取，確保跨裝置資料一致)
+ * 🔄 完整雙向同步流程 (移除 Cache-Control Header 避免跨域預檢失敗，以網址時間戳記防止快取)
  */
 async function performFullSync(interactive = false) {
     const token = getGitHubToken();
@@ -764,13 +764,12 @@ async function performFullSync(interactive = false) {
     try {
         const timestamp = Date.now();
 
-        // 🔍 防重複創建核心：若沒設定 Gist ID，先查詢 GitHub 是否已有備份檔 Gist (防快取)
+        // 🔍 防重複創建核心：若沒設定 Gist ID，先查詢 GitHub 是否已有備份檔 Gist
         if (!gistId) {
             const listRes = await fetch(`https://api.github.com/gists?per_page=100&t=${timestamp}`, {
                 method: "GET",
                 headers: { 
-                    "Authorization": `token ${token}`,
-                    "Cache-Control": "no-cache"
+                    "Authorization": `token ${token}`
                 }
             });
             if (listRes.ok) {
@@ -785,13 +784,12 @@ async function performFullSync(interactive = false) {
             }
         }
 
-        // 1. 下載雲端資料 (防快取)
+        // 1. 下載雲端資料
         if (gistId) {
             const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
                 method: "GET",
                 headers: { 
-                    "Authorization": `token ${token}`,
-                    "Cache-Control": "no-cache"
+                    "Authorization": `token ${token}`
                 }
             });
 
