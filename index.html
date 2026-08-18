@@ -705,8 +705,15 @@ function safeParseJSON(jsonStr) {
     }
 }
 
+function getItemTime(item) {
+    if (!item) return 0;
+    let t = item.updatedAt || item.createdAt || 0;
+    if (typeof t === 'string') t = Date.parse(t) || 0;
+    return Number(t) || 0;
+}
+
 /**
- * 🔀 核心合併邏輯：聯集合併並以最新的 updatedAt 判斷
+ * 🔀 核心合併邏輯：完全聯集合併，並依最新時間紀錄 (updatedAt/createdAt) 做保留與覆蓋
  */
 function mergeDatasets(localList, remoteList) {
     const map = new Map();
@@ -715,14 +722,13 @@ function mergeDatasets(localList, remoteList) {
         if (!item || !item.word) return;
         const cleanName = sanitizeWord(item.word);
         const key = cleanName.toLowerCase();
-        
-        const itemTime = item.updatedAt || item.createdAt || 1;
+        const itemTime = getItemTime(item);
 
         if (!map.has(key)) {
             map.set(key, { ...item, word: cleanName, updatedAt: itemTime });
         } else {
             const existing = map.get(key);
-            const existingTime = existing.updatedAt || existing.createdAt || 1;
+            const existingTime = getItemTime(existing);
 
             if (itemTime >= existingTime) {
                 map.set(key, { ...existing, ...item, word: cleanName, updatedAt: itemTime });
@@ -739,7 +745,7 @@ function mergeDatasets(localList, remoteList) {
 }
 
 /**
- * 🔄 完整雙向同步流程 (含自動尋找已有 Gist 功能)
+ * 🔄 完整雙向同步流程 (禁止 HTTP GET 快取，確保跨裝置資料一致)
  */
 async function performFullSync(interactive = false) {
     const token = getGitHubToken();
@@ -756,11 +762,16 @@ async function performFullSync(interactive = false) {
     let remoteWords = [];
 
     try {
-        // 🔍 防重複創建核心：若沒設定 Gist ID，先向 GitHub 查詢是否已有備份檔 Gist
+        const timestamp = Date.now();
+
+        // 🔍 防重複創建核心：若沒設定 Gist ID，先查詢 GitHub 是否已有備份檔 Gist (防快取)
         if (!gistId) {
-            const listRes = await fetch("https://api.github.com/gists?per_page=100", {
+            const listRes = await fetch(`https://api.github.com/gists?per_page=100&t=${timestamp}`, {
                 method: "GET",
-                headers: { "Authorization": `token ${token}` }
+                headers: { 
+                    "Authorization": `token ${token}`,
+                    "Cache-Control": "no-cache"
+                }
             });
             if (listRes.ok) {
                 const gists = await listRes.json();
@@ -774,11 +785,14 @@ async function performFullSync(interactive = false) {
             }
         }
 
-        // 1. 下載雲端資料
+        // 1. 下載雲端資料 (防快取)
         if (gistId) {
-            const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
+            const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
                 method: "GET",
-                headers: { "Authorization": `token ${token}` }
+                headers: { 
+                    "Authorization": `token ${token}`,
+                    "Cache-Control": "no-cache"
+                }
             });
 
             if (getRes.ok) {
@@ -790,14 +804,14 @@ async function performFullSync(interactive = false) {
             }
         }
 
-        // 2. 聯集合併
+        // 2. 進行雙向聯集合併
         const localWords = getWords();
         const mergedWords = mergeDatasets(localWords, remoteWords);
 
-        // 3. 寫回本地
+        // 3. 同步寫回本地並更新畫面
         saveWords(mergedWords, false);
 
-        // 4. 上傳更新至雲端 Gist
+        // 4. 上傳完整聯集結果至雲端 Gist
         const content = JSON.stringify(mergedWords, null, 2);
         let pushRes;
 
@@ -847,7 +861,7 @@ async function performFullSync(interactive = false) {
         const activeCount = mergedWords.filter(w => !w.isDeleted).length;
 
         if (interactive) {
-            alert(`✅ 雙向同步完成！\n資料庫有效總計：${activeCount} 個單字\n(Gist ID: ${gistId})`);
+            alert(`✅ 雙向同步完成！\n雙端同步單字總計：${activeCount} 個有效單字\n(Gist ID: ${gistId})`);
         }
     } catch (err) {
         console.error("雙向同步失敗:", err);
@@ -1830,8 +1844,8 @@ function renderWordList() {
     });
 
     filteredWords.sort((a, b) => {
-        const timeA = a.updatedAt || a.createdAt || 0;
-        const timeB = b.updatedAt || b.createdAt || 0;
+        const timeA = getItemTime(a);
+        const timeB = getItemTime(b);
         const wordA = a.word.toLowerCase();
         const wordB = b.word.toLowerCase();
 
@@ -1870,7 +1884,7 @@ function renderWordList() {
         const realIndex = allWords.findIndex(w => w.word.toLowerCase() === item.word.toLowerCase());
         const cleanWord = sanitizeWord(item.word);
 
-        const displayTime = item.updatedAt || item.createdAt;
+        const displayTime = getItemTime(item);
         const timeString = displayTime 
             ? new Date(displayTime).toLocaleString('zh-TW', { 
                 year: 'numeric', month: '2-digit', day: '2-digit', 
@@ -2028,7 +2042,7 @@ function importData(event) {
     event.target.value = '';
 }
 
-// 📱 喚醒分頁 / 切換網頁時自動同步
+// 📱 喚醒分頁 / 切換網頁時自動進行雙向同步
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
         if (getGitHubToken()) {
