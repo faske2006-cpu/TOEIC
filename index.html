@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>AI TOEIC 全方位單字學習與 SRS 複習系統 (Gist 雙向自動同步版)</title>
+<title>AI TOEIC 全方位單字學習與 SRS 複習系統 (Gist 安全世代同步版 v4)</title>
 
 <style>
 * {
@@ -467,7 +467,7 @@ details summary:hover {
 <body>
 
 <div class="container">
-    <h1>📚 AI TOEIC 全方位單字學習系統 (Gist 雙向自動同步版)</h1>
+    <h1>📚 AI TOEIC 全方位單字學習系統 (Gist 安全世代同步版 v4)</h1>
 
     <div class="card api-box">
         <details id="settingsDetails">
@@ -539,7 +539,7 @@ details summary:hover {
             </div>
 
             <div class="btn-toolbar-group">
-                <button class="success btn-sm" onclick="performFullSync(true)">🔄 雙向同步</button>
+                <button class="success btn-sm" onclick="performFullSync(true)">🛡️ 安全雙向同步</button>
                 <button class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 批次補齊</button>
                 <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
                 <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
@@ -656,9 +656,11 @@ document.getElementById("gistIdInput").value = getGistId();
 
 function safeParseJSON(jsonStr) {
     if (!jsonStr) throw new Error("傳入的資料內容為空");
+    let firstParseError = null;
     try {
         return JSON.parse(jsonStr);
     } catch (e1) {
+        firstParseError = e1;
         console.warn("直接解析 JSON 失敗，啟動修復機制...", e1);
     }
 
@@ -701,7 +703,7 @@ function safeParseJSON(jsonStr) {
         }
         throw new Error("無法解析的 JSON 格式");
     } catch (e3) {
-        throw new Error(`JSON 解析失敗: (${e1.message})`);
+        throw new Error(`JSON 解析失敗：${firstParseError ? firstParseError.message : e3.message}`);
     }
 }
 
@@ -750,127 +752,331 @@ function mergeDatasets(localList, remoteList) {
 async function performFullSync(interactive = false) {
     const token = getGitHubToken();
     if (!token) {
-        if (interactive) alert("請先在「系統連線設定」中填寫您的 GitHub Personal Access Token！");
+        if (interactive) alert("請先在「系統連線設定」中填寫 GitHub Personal Access Token！");
         return;
     }
 
     updateSyncStatusDisplay('syncing');
-
     let gistId = getGistId();
-    const fileName = "toeic_vocab_db.json";
-    const description = "AI TOEIC 全方位單字學習系統 - 單字資料庫備份";
-    let remoteWords = [];
+    const LEGACY_FILE = "toeic_vocab_db.json";
+    const MANIFEST_FILE = "toeic_vocab_manifest.json";
+    const SUMMARY_FILE = "toeic_vocab_summary.json";
+    const CHUNK_PREFIX = "toeic_vocab_gen_";
+    const CHUNK_LIMIT_BYTES = 180000;
+    const description = "AI TOEIC 全方位單字學習系統 - 安全分段雙向同步";
+    const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+    };
+
+    const responseError = async (res) => {
+        try {
+            const body = await res.clone().json();
+            return body.message || JSON.stringify(body);
+        } catch (_) {
+            try { return (await res.text()).slice(0, 300); } catch (_) { return ""; }
+        }
+    };
+
+    const githubFetch = async (url, options = {}) => {
+        const res = await fetch(url, {
+            ...options,
+            headers: { ...headers, ...(options.headers || {}) }
+        });
+        if (!res.ok) {
+            const detail = await responseError(res);
+            throw new Error(`GitHub API ${res.status} ${res.statusText}${detail ? "：" + detail : ""}`);
+        }
+        return res;
+    };
+
+    const statsOf = (words) => {
+        const total = words.length;
+        const deleted = words.filter(w => w && w.isDeleted).length;
+        return { total, active: total - deleted, deleted };
+    };
+
+    const validateWords = (words, label) => {
+        if (!Array.isArray(words)) throw new Error(`${label}不是 JSON 陣列`);
+        const invalid = words.filter(w => !w || typeof w.word !== "string" || !w.word.trim()).length;
+        if (invalid > 0) throw new Error(`${label}含有 ${invalid} 筆無效資料，已停止同步`);
+        return words;
+    };
+
+    const parseSmallFile = (file, label, arrayExpected = false) => {
+        if (!file) throw new Error(`找不到${label}`);
+        if (file.truncated) throw new Error(`${label}被 GitHub 截斷，已停止同步以保護資料`);
+        if (typeof file.content !== "string" || !file.content.trim()) throw new Error(`${label}內容為空`);
+        let parsed;
+        try { parsed = JSON.parse(file.content); }
+        catch (err) { throw new Error(`${label} JSON 損壞：${err.message}`); }
+        return arrayExpected ? validateWords(parsed, label) : parsed;
+    };
+
+    const buildGeneration = (words, generationId) => {
+        const chunks = [];
+        let current = [];
+        let bytes = 2;
+        for (const word of words) {
+            const json = JSON.stringify(word);
+            const size = new Blob([json]).size + (current.length ? 1 : 0);
+            if (current.length && bytes + size > CHUNK_LIMIT_BYTES) {
+                chunks.push(current);
+                current = [];
+                bytes = 2;
+            }
+            current.push(word);
+            bytes += size;
+        }
+        if (current.length || chunks.length === 0) chunks.push(current);
+
+        const files = {};
+        const names = [];
+        chunks.forEach((chunk, i) => {
+            const name = `${CHUNK_PREFIX}${generationId}_part_${String(i + 1).padStart(3, "0")}.json`;
+            names.push(name);
+            files[name] = { content: JSON.stringify(chunk) };
+        });
+        return { files, names };
+    };
+
+    const readGeneration = (gistFiles, manifest) => {
+        if (!manifest || manifest.version !== 4 || !manifest.active || !Array.isArray(manifest.active.chunks)) {
+            throw new Error("雲端同步清單格式無效");
+        }
+        const combined = [];
+        for (const name of manifest.active.chunks) {
+            const chunk = parseSmallFile(gistFiles[name], `雲端分段 ${name}`, true);
+            combined.push(...chunk);
+        }
+        validateWords(combined, "雲端合併資料");
+        const actual = statsOf(combined);
+        const expected = manifest.active.stats || {};
+        if (actual.total !== expected.total || actual.active !== expected.active || actual.deleted !== expected.deleted) {
+            throw new Error(`雲端摘要不一致，預期 ${expected.total}/${expected.active}/${expected.deleted}，實際 ${actual.total}/${actual.active}/${actual.deleted}，已停止同步`);
+        }
+        return combined;
+    };
 
     try {
-        const timestamp = Date.now();
+        const now = Date.now();
+        const localWords = validateWords(getWords(), "本機資料");
+        const localStats = statsOf(localWords);
 
-        // 🔍 防重複創建核心：若沒設定 Gist ID，先查詢 GitHub 是否已有備份檔 Gist
         if (!gistId) {
-            const listRes = await fetch(`https://api.github.com/gists?per_page=100&t=${timestamp}`, {
-                method: "GET",
-                headers: { 
-                    "Authorization": `token ${token}`
-                }
-            });
-            if (listRes.ok) {
-                const gists = await listRes.json();
-                const existingGist = gists.find(g => g.files && g.files[fileName]);
-                if (existingGist) {
-                    gistId = existingGist.id;
-                    localStorage.setItem("gist_id", gistId);
-                    const gistInput = document.getElementById("gistIdInput");
-                    if (gistInput) gistInput.value = gistId;
+            const listRes = await githubFetch(`https://api.github.com/gists?per_page=100&t=${now}`);
+            const gists = await listRes.json();
+            const found = gists.find(g => g.files && (g.files[MANIFEST_FILE] || g.files[LEGACY_FILE]));
+            if (found) {
+                gistId = found.id;
+                localStorage.setItem("gist_id", gistId);
+                const input = document.getElementById("gistIdInput");
+                if (input) input.value = gistId;
+            }
+        }
+
+        let gistData = null;
+        let gistFiles = {};
+        let oldManifest = null;
+        let remoteWords = [];
+        let remoteStats = { total: 0, active: 0, deleted: 0 };
+        let legacyMigration = false;
+
+        if (gistId) {
+            const getRes = await githubFetch(`https://api.github.com/gists/${gistId}?t=${now}`);
+            gistData = await getRes.json();
+            gistFiles = gistData.files || {};
+
+            if (gistFiles[MANIFEST_FILE]) {
+                oldManifest = parseSmallFile(gistFiles[MANIFEST_FILE], "雲端同步清單");
+                remoteWords = readGeneration(gistFiles, oldManifest);
+                remoteStats = statsOf(remoteWords);
+            } else if (gistFiles[LEGACY_FILE]) {
+                const legacy = gistFiles[LEGACY_FILE];
+                if (legacy.truncated) {
+                    if (!interactive) {
+                        throw new Error("偵測到舊版大型雲端檔案且內容被截斷。自動同步已停止，不會覆蓋雲端。請在資料最多的裝置上手動按「雙向同步」執行安全遷移。");
+                    }
+                    if (localStats.active === 0) {
+                        throw new Error("舊版雲端檔案已截斷，且本機沒有資料。為避免遺失，已禁止覆蓋雲端。請先從資料較多的裝置匯出 JSON，再匯入此裝置。");
+                    }
+                    const ok = confirm(
+                        `偵測到舊版大型 Gist，GitHub API 無法完整讀取。\n\n` +
+                        `本機目前有 ${localStats.active} 個有效單字、${localStats.deleted} 個刪除紀錄。\n` +
+                        `系統將建立新版分段資料，但保留舊檔案不刪除。\n\n` +
+                        `只有在這台裝置是資料最完整的裝置時才按「確定」。`
+                    );
+                    if (!ok) throw new Error("已取消安全遷移，雲端資料未變更");
+                    legacyMigration = true;
+                } else {
+                    remoteWords = validateWords(safeParseJSON(legacy.content), "舊版雲端資料");
+                    remoteStats = statsOf(remoteWords);
+                    legacyMigration = true;
                 }
             }
         }
 
-		// 1. 下載雲端資料（含防截斷與防快取處理）
-        if (gistId) {
-            const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
-                method: "GET",
-                headers: { "Authorization": `token ${token}` }
-            });
+        const mergedWords = validateWords(mergeDatasets(localWords, remoteWords), "聯集資料");
+        const mergedStats = statsOf(mergedWords);
 
-			if (getRes.ok) {
-				const gistData = await getRes.json();
-				const file = gistData.files[fileName] || Object.values(gistData.files)[0];
-				if (file) {
-					let contentStr = file.content;
-					// 若 Gist 內容被 GitHub 截斷，強制抓取 raw_url 完整資料
-					if (file.truncated && file.raw_url) {
-						const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
-						contentStr = await rawRes.text();
-				}
-				if (contentStr) {
-					remoteWords = safeParseJSON(contentStr);
-					}
-				}
-			}
-		}
-        // 2. 進行雙向聯集合併
-        const localWords = getWords();
-        const mergedWords = mergeDatasets(localWords, remoteWords);
+        // 數量保護：聯集結果不可少於任何一端的總紀錄或有效紀錄。
+        if (mergedStats.total < Math.max(localStats.total, remoteStats.total)) {
+            throw new Error(
+                `同步前數量檢查失敗。` +
+                `本機 ${localStats.total}/${localStats.active}，雲端 ${remoteStats.total}/${remoteStats.active}，` +
+                `聯集 ${mergedStats.total}/${mergedStats.active}。已停止寫入雲端。`
+            );
+        }
 
-        // 3. 同步寫回本地並更新畫面
+        // 與上次成功摘要比較，避免突然大量減少。
+        const previousSummaryRaw = localStorage.getItem("last_cloud_summary");
+        if (previousSummaryRaw) {
+            try {
+                const previous = JSON.parse(previousSummaryRaw);
+                // 有效數可因正常刪除轉為 isDeleted 墓碑而下降，但總紀錄不可下降。
+                if (mergedStats.total < previous.total) {
+                    throw new Error(
+                        `總紀錄低於上次成功同步摘要（上次 ${previous.total}，本次 ${mergedStats.total}），` +
+                        `已停止寫入雲端。有效單字的正常刪除會保留墓碑，因此不應降低總紀錄。`
+                    );
+                }
+            } catch (err) {
+                if (err.message.includes("已停止寫入雲端")) throw err;
+            }
+        }
+
         saveWords(mergedWords, false);
 
-        // 4. 上傳完整聯集結果至雲端 Gist
-        const content = JSON.stringify(mergedWords, null, 2);
-        let pushRes;
+        const generationId = `${now}_${Math.random().toString(36).slice(2, 8)}`;
+        const generation = buildGeneration(mergedWords, generationId);
+        const previousActive = oldManifest && oldManifest.active ? oldManifest.active : null;
 
+        // 第一階段：只新增新世代分段與候選摘要，不改目前 active 指標。
+        const candidateSummary = {
+            schemaVersion: 4,
+            state: "candidate",
+            generationId,
+            createdAt: now,
+            stats: mergedStats,
+            chunks: generation.names,
+            source: legacyMigration ? "legacy-safe-migration" : "two-way-union"
+        };
+        const stageFiles = {
+            ...generation.files,
+            [SUMMARY_FILE]: { content: JSON.stringify(candidateSummary, null, 2) }
+        };
+
+        let stageRes;
         if (!gistId) {
-            pushRes = await fetch("https://api.github.com/gists", {
+            stageRes = await githubFetch("https://api.github.com/gists", {
                 method: "POST",
-                headers: {
-                    "Authorization": `token ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    description: description,
-                    public: false,
-                    files: { [fileName]: { content: content } }
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ description, public: false, files: stageFiles })
             });
-        } else {
-            pushRes = await fetch(`https://api.github.com/gists/${gistId}`, {
-                method: "PATCH",
-                headers: {
-                    "Authorization": `token ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    description: description,
-                    files: { [fileName]: { content: content } }
-                })
-            });
-        }
-
-        if (!pushRes.ok) {
-            const errData = await pushRes.json();
-            throw new Error(errData.message || "GitHub API 回應失敗");
-        }
-
-        const pushData = await pushRes.json();
-        if (!gistId) {
-            gistId = pushData.id;
+            const created = await stageRes.json();
+            gistId = created.id;
             localStorage.setItem("gist_id", gistId);
-            const gistInput = document.getElementById("gistIdInput");
-            if (gistInput) gistInput.value = gistId;
+            const input = document.getElementById("gistIdInput");
+            if (input) input.value = gistId;
+        } else {
+            await githubFetch(`https://api.github.com/gists/${gistId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ description, files: stageFiles })
+            });
+        }
+
+        // 驗證階段：重新由 API 讀回新分段，不能使用記憶體中的資料冒充成功。
+        const verifyRes = await githubFetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`);
+        const verifyData = await verifyRes.json();
+        const verifyFiles = verifyData.files || {};
+        const verifyCombined = [];
+        for (const name of generation.names) {
+            verifyCombined.push(...parseSmallFile(verifyFiles[name], `新分段 ${name}`, true));
+        }
+        const verifyStats = statsOf(verifyCombined);
+        if (verifyStats.total !== mergedStats.total || verifyStats.active !== mergedStats.active || verifyStats.deleted !== mergedStats.deleted) {
+            throw new Error("新世代資料回讀驗證失敗。候選分段保留供檢查，但未切換為正式雲端資料");
+        }
+
+        // 第二階段：只有回讀驗證成功後，才原子式更新 manifest 指向新世代。
+        const manifest = {
+            version: 4,
+            format: "generation-chunked-json",
+            updatedAt: Date.now(),
+            active: {
+                generationId,
+                chunks: generation.names,
+                stats: mergedStats
+            },
+            previous: previousActive,
+            safety: {
+                rawUrlUsed: false,
+                twoPhaseCommit: true,
+                verifiedAfterUpload: true,
+                legacyFilePreserved: Boolean(gistFiles[LEGACY_FILE])
+            }
+        };
+        const finalSummary = {
+            schemaVersion: 4,
+            state: "active",
+            gistId,
+            updatedAt: manifest.updatedAt,
+            activeGeneration: generationId,
+            previousGeneration: previousActive ? previousActive.generationId : null,
+            stats: mergedStats,
+            chunks: generation.names,
+            previousStats: previousActive ? previousActive.stats : null,
+            protection: [
+                "rescue-data-never-auto-overwrites",
+                "count-guard",
+                "summary-validation",
+                "no-raw-url",
+                "two-phase-commit",
+                "read-back-verification",
+                "previous-generation-retained",
+                "legacy-file-retained"
+            ]
+        };
+
+        await githubFetch(`https://api.github.com/gists/${gistId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                description,
+                files: {
+                    [MANIFEST_FILE]: { content: JSON.stringify(manifest, null, 2) },
+                    [SUMMARY_FILE]: { content: JSON.stringify(finalSummary, null, 2) }
+                }
+            })
+        });
+
+        // 最終驗證 manifest 確實指向新世代。
+        const finalRes = await githubFetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`);
+        const finalData = await finalRes.json();
+        const finalManifest = parseSmallFile((finalData.files || {})[MANIFEST_FILE], "最終同步清單");
+        if (!finalManifest.active || finalManifest.active.generationId !== generationId) {
+            throw new Error("最終同步清單驗證失敗；舊世代仍保留，請勿重複同步並查看 Console")
         }
 
         localStorage.setItem("last_sync_time", Date.now());
+        localStorage.setItem("last_cloud_summary", JSON.stringify(mergedStats));
         updateSyncStatusDisplay('success');
-
-        const activeCount = mergedWords.filter(w => !w.isDeleted).length;
-
         if (interactive) {
-            alert(`✅ 雙向同步完成！\n雙端同步單字總計：${activeCount} 個有效單字\n(Gist ID: ${gistId})`);
+            alert(
+                `✅ 安全雙向同步完成！\n` +
+                `有效單字：${mergedStats.active}\n刪除紀錄：${mergedStats.deleted}\n總紀錄：${mergedStats.total}\n` +
+                `分段檔案：${generation.names.length}\n` +
+                `已完成上傳後回讀驗證，並保留上一世代與舊版檔案。`
+            );
         }
     } catch (err) {
-        console.error("雙向同步失敗:", err);
+        console.error("安全雙向同步失敗:", err);
         updateSyncStatusDisplay('error');
         if (interactive) {
-            alert(`❌ 雙向同步失敗：${err.message}`);
+            const message = err && err.message ? err.message : String(err);
+            alert(`❌ 安全雙向同步失敗：\n${message}\n\n雲端 active 資料不會因本次失敗而被切換。`);
         }
     }
 }
