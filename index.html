@@ -6,22 +6,50 @@
 <title>AI TOEIC 全方位單字學習與 SRS 複習系統 (Gist 雙向自動同步版)</title>
 
 <style>
+:root {
+    /* 莫蘭迪基調 */
+    --bg-main: #f4f1ea;
+    --card-bg: #ffffff;
+    --text-main: #383735;
+    --text-muted: #787571;
+    --border-color: #e2ded7;
+    --border-dashed: #d4cfc7;
+    
+    /* 莫蘭迪色彩系統 */
+    --color-primary: #5c7080;       /* 煙藍 */
+    --color-primary-hover: #4a5c6b;
+    --color-success: #6c8d7b;       /* 苔綠 */
+    --color-danger: #b86b6b;        /* 乾燥玫瑰紅 */
+    --color-warning: #c69b6e;       /* 暖亞麻黃 */
+    --color-secondary: #8c8984;     /* 靜謐灰 */
+    --color-voice-female: #a67c8e;  /* 藕粉 */
+    --color-voice-male: #637d94;    /* 灰藍 */
+
+    /* 圓角與陰影 */
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+    --shadow-soft: 0 8px 24px rgba(60, 50, 40, 0.05);
+    --shadow-sticky: 0 10px 28px rgba(60, 50, 40, 0.08);
+}
+
 * {
     box-sizing: border-box;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: #f3f4f6;
+    background-color: var(--bg-main);
     margin: 0;
-    padding: 12px;
-    padding-top: max(12px, env(safe-area-inset-top));
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
-    color: #333;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    color: var(--text-main);
     word-break: break-word;
     overflow-wrap: break-word;
+    line-height: 1.5;
 }
 
 .container {
@@ -31,22 +59,29 @@ body {
 
 h1 {
     font-size: 1.5rem;
+    font-weight: 600;
     margin-top: 10px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     text-align: center;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
 }
 
 h2 {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
+    font-weight: 600;
     margin-top: 0;
+    color: var(--text-main);
 }
 
 .card {
-    background: white;
-    padding: 16px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 #resultContainer {
@@ -55,98 +90,116 @@ h2 {
 
 .sticky-search {
     position: sticky;
-    top: max(12px, env(safe-area-inset-top));
+    top: max(16px, env(safe-area-inset-top));
     z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    box-shadow: var(--shadow-sticky);
+    border-color: #d8d3cb;
+    backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.95);
 }
 
 .api-box {
-    background: #eef6ff;
-    border: 1px solid #b6d8ff;
-    padding: 12px 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
+    background: #f7f5f0;
+    border: 1px solid var(--border-color);
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
     font-size: 0.9rem;
 }
 
 .api-box input {
-    margin-top: 5px;
-    margin-bottom: 8px;
+    margin-top: 6px;
+    margin-bottom: 10px;
     font-family: monospace;
     width: 100%;
 }
 
 input, select {
-    padding: 10px;
+    padding: 10px 14px;
     margin-top: 5px;
     margin-bottom: 5px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 0.95rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.92rem;
     width: 100%;
+    background-color: #fcfbf9;
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+input:focus, select:focus {
+    border-color: var(--color-primary);
+    background-color: #ffffff;
 }
 
 select {
-    background-color: #fff;
     cursor: pointer;
 }
 
 button {
-    padding: 9px 12px;
+    padding: 9px 14px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 500;
-    transition: opacity 0.2s, background-color 0.2s;
+    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
+    letter-spacing: 0.3px;
 }
 
 button:hover {
-    opacity: 0.9;
+    filter: brightness(0.93);
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
 }
 
 button:disabled {
-    background: #ccc !important;
+    background: #d6d2cb !important;
+    color: #9c9890 !important;
     cursor: not-allowed;
+    transform: none !important;
 }
 
 .btn-sm {
-    padding: 6px 10px;
-    font-size: 0.85rem;
+    padding: 6px 12px;
+    font-size: 0.82rem;
 }
 
 .btn-xs {
-    padding: 3px 8px;
+    padding: 4px 8px;
     font-size: 0.78rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
 }
 
-.primary { background: #0078d4; color: white; }
-.success { background: #107c10; color: white; }
-.danger { background: #d9381e; color: white; }
-.secondary { background: #6c757d; color: white; }
-.warning { background: #d97706; color: white; }
-.voice-female { background: #e83e8c; color: white; }
-.voice-male { background: #007bb6; color: white; }
+.primary { background: var(--color-primary); color: white; }
+.success { background: var(--color-success); color: white; }
+.danger { background: var(--color-danger); color: white; }
+.secondary { background: var(--color-secondary); color: white; }
+.warning { background: var(--color-warning); color: white; }
+.voice-female { background: var(--color-voice-female); color: white; }
+.voice-male { background: var(--color-voice-male); color: white; }
 
 .control-panel {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 15px;
+    background: #f8f6f1;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 16px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .control-row {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
     align-items: center;
 }
@@ -159,7 +212,7 @@ button:disabled {
 
 .search-input-wrap input {
     margin: 0;
-    padding-right: 30px;
+    padding-right: 32px;
 }
 
 .clear-search-btn {
@@ -169,11 +222,17 @@ button:disabled {
     transform: translateY(-50%);
     background: transparent;
     border: none;
-    color: #999;
+    color: var(--text-muted);
     font-size: 1.1rem;
     cursor: pointer;
     padding: 2px 6px;
     display: none;
+}
+
+.clear-search-btn:hover {
+    color: var(--text-main);
+    background: transparent;
+    transform: translateY(-50%);
 }
 
 .control-panel select {
@@ -183,59 +242,102 @@ button:disabled {
     min-width: 180px;
 }
 
-.btn-toolbar-group {
+/* ===== 重構防破框工具列樣式 ===== */
+.toolbar-section {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    width: 100%;
-    padding-top: 8px;
-    border-top: 1px dashed #cbd5e1;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border-dashed);
 }
 
-.btn-toolbar-group button {
-    flex: 1;
-    min-width: 110px;
+.toolbar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+.toolbar-card {
+    background: #f2efe9;
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0; /* 防止子元素撐爆 Grid Track */
+    overflow: hidden;
+}
+
+.toolbar-card-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar-btn-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap; /* 空間不足時自動彈性折行，不溢出 */
+}
+
+.toolbar-btn-group button {
+    flex: 1 1 calc(33.33% - 6px);
+    min-width: 65px; /* 設定合理的安全寬度 */
+    padding: 6px 4px;
+    font-size: 0.78rem;
     margin: 0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .stat-bar {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 12px;
-    font-size: 0.82rem;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
 }
 
 .stat-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    background: #f1f5f9;
-    color: #475569;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: #f0ebe1;
+    color: var(--text-main);
     font-weight: 600;
 }
 
-.stat-badge.due { background: #fee2e2; color: #991b1b; }
-.stat-badge.mastered { background: #dcfce7; color: #166534; }
-.stat-badge.learning { background: #fef3c7; color: #b45309; }
+.stat-badge.due { background: #f3e2e2; color: #8c3b3b; }
+.stat-badge.mastered { background: #e2ede5; color: #326042; }
+.stat-badge.learning { background: #f7ede0; color: #8a5720; }
 
 .word-card {
-    border: 1px solid #e0e0e0;
-    padding: 14px;
-    margin-top: 10px;
-    border-radius: 8px;
-    background: #fafafa;
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    margin-top: 12px;
+    border-radius: var(--radius-md);
+    background: #fdfcf9;
     width: 100%;
+    transition: border-color 0.2s;
+}
+
+.word-card:hover {
+    border-color: #cbd5e1;
 }
 
 .word-card-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px dashed #e0e0e0;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border-dashed);
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
 }
 
 .word-actions {
@@ -247,33 +349,33 @@ button:disabled {
 .srs-box {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     margin-top: 8px;
-    padding: 8px 10px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    padding: 8px 12px;
+    background: #f5f2eb;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     font-size: 0.85rem;
 }
 
 .srs-star {
-    color: #f59e0b;
+    color: #d99b26;
     font-weight: bold;
 }
 
 .srs-due-tag {
-    background: #fee2e2;
-    color: #991b1b;
-    padding: 2px 6px;
+    background: #f3e2e2;
+    color: #8c3b3b;
+    padding: 2px 8px;
     border-radius: 4px;
-    font-weight: bold;
+    font-weight: 600;
     font-size: 0.75rem;
 }
 
 .srs-ok-tag {
-    background: #dcfce7;
-    color: #166534;
-    padding: 2px 6px;
+    background: #e2ede5;
+    color: #326042;
+    padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.75rem;
 }
@@ -283,36 +385,36 @@ button:disabled {
     align-items: center;
     padding: 2px 8px;
     border-radius: 12px;
-    font-size: 0.78rem;
-    font-weight: 700;
+    font-size: 0.75rem;
+    font-weight: 600;
     margin-left: 6px;
     line-height: 1.2;
     vertical-align: middle;
 }
 
 .badge-irregular-verb {
-    background-color: #ffe3e3;
-    color: #c92a2a;
-    border: 1px solid #ffc9c9;
+    background-color: #f5e1e1;
+    color: #8a3333;
+    border: 1px solid #ebd0d0;
 }
 
 .badge-irregular-noun {
-    background-color: #ffe8cc;
-    color: #d9480f;
-    border: 1px solid #ffd8a8;
+    background-color: #f8ebe0;
+    color: #8a5323;
+    border: 1px solid #eddcca;
 }
 
 .badge-same-form {
-    background-color: #e7f5ff;
-    color: #1864ab;
-    border: 1px solid #d0ebff;
+    background-color: #e0e9f0;
+    color: #2b5578;
+    border: 1px solid #cee0ec;
 }
 
 .irregular-highlight {
-    font-weight: bold;
-    color: #111;
-    background: #fff3bf;
-    padding: 1px 4px;
+    font-weight: 600;
+    color: #2b2927;
+    background: #f5ebd8;
+    padding: 1px 5px;
     border-radius: 3px;
 }
 
@@ -323,41 +425,43 @@ details {
 details summary {
     cursor: pointer;
     font-size: 1.05rem;
-    font-weight: bold;
-    color: #0078d4;
+    font-weight: 600;
+    color: var(--color-primary);
     user-select: none;
     line-height: 1.5;
+    transition: color 0.2s;
 }
 
 details summary:hover {
-    color: #005a9e;
+    color: var(--color-primary-hover);
 }
 
 .detail-content {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #ccc;
-    font-size: 0.95rem;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-dashed);
+    font-size: 0.92rem;
     line-height: 1.6;
     width: 100%;
+    color: var(--text-main);
 }
 
 .detail-content p {
-    margin: 10px 0;
+    margin: 8px 0;
 }
 
 .example-wrapper {
-    margin-top: 10px;
+    margin-top: 12px;
 }
 
 .example-title-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
-    font-weight: bold;
-    font-size: 0.92rem;
-    color: #334155;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-muted);
 }
 
 .example-voices {
@@ -366,19 +470,18 @@ details summary:hover {
 }
 
 .example-box {
-    padding: 10px 12px;
+    padding: 10px 14px;
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-left: 4px solid #0078d4;
-    border-radius: 0 6px 6px 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--color-primary);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .example-en {
-    color: #1a1a1a;
+    color: var(--text-main);
     font-weight: 500;
     line-height: 1.5;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     width: 100%;
 }
 
@@ -390,19 +493,19 @@ details summary:hover {
 }
 
 .zh-toggle-btn {
-    background: #e2e8f0;
-    color: #475569;
-    border: 1px solid #cbd5e1;
+    background: #eae6de;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
     cursor: pointer;
     border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 0.78rem;
+    padding: 2px 8px;
+    font-size: 0.75rem;
     line-height: 1.2;
 }
 
 .zh-toggle-btn:hover {
-    background: #cbd5e1;
-    color: #1e293b;
+    background: #dfd9ce;
+    color: var(--text-main);
 }
 
 .zh-text.hidden {
@@ -411,55 +514,66 @@ details summary:hover {
 
 .pos-tag {
     font-size: 0.85rem;
-    color: #d9381e;
+    color: var(--color-danger);
     font-style: italic;
     margin-left: 2px;
 }
 
 .phonetic-tag {
     font-size: 0.85rem;
-    color: #555;
+    color: var(--text-muted);
     margin-left: 4px;
 }
 
 .category-badge {
     display: inline-block;
-    background: #e1f5fe;
-    color: #0288d1;
+    background: #e5edf2;
+    color: #3b6078;
     padding: 2px 8px;
     border-radius: 12px;
-    font-size: 0.78rem;
-    font-weight: bold;
+    font-size: 0.75rem;
+    font-weight: 600;
     margin-top: 4px;
 }
 
 .status-log-box {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-left: 4px solid #0078d4;
-    padding: 12px;
-    border-radius: 6px;
+    background: #f6f4ee;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--color-primary);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
     font-size: 0.88rem;
     line-height: 1.6;
 }
 
 .status-log-box .log-item {
     margin-bottom: 4px;
-    color: #495057;
+    color: var(--text-muted);
 }
 
 .status-log-box .log-active {
-    color: #0078d4;
-    font-weight: bold;
+    color: var(--color-primary);
+    font-weight: 600;
 }
 
 .status-log-box .log-error {
-    color: #d9381e;
+    color: var(--color-danger);
+}
+
+.count-badge-box {
+    display: inline-flex;
+    gap: 8px;
+    font-size: 0.82rem;
+    background: #f0ebe1;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
 }
 
 @media (min-width: 650px) {
-    body { padding: 20px; }
-    h1 { font-size: 1.8rem; }
+    body { padding: 24px; }
+    h1 { font-size: 1.75rem; }
 }
 </style>
 </head>
@@ -472,19 +586,19 @@ details summary:hover {
     <div class="card api-box">
         <details id="settingsDetails">
             <summary>⚙️ 系統與雲端連線設定 (Gemini & GitHub Gist)</summary>
-            <div style="margin-top:12px;">
+            <div style="margin-top:14px;">
                 <label><strong>🔑 Gemini API Key：</strong></label>
                 <input id="apiKeyInput" type="text" placeholder="貼上您的 Gemini API Key" onchange="saveSettings(false)">
 
-                <div style="margin-top:12px; border-top: 1px dashed #b6d8ff; padding-top: 10px;">
+                <div style="margin-top:14px; border-top: 1px dashed var(--border-dashed); padding-top: 12px;">
                     <label><strong>🐙 GitHub Personal Access Token (Gist 權限)：</strong></label>
                     <input id="githubTokenInput" type="text" placeholder="請輸入帶有 gist 權限的 GitHub Token" onchange="saveSettings(false)">
                     
-                    <label style="margin-top:8px; display:block;"><strong>📄 GitHub Gist ID (可留空，系統將自動搜尋並綁定)：</strong></label>
+                    <label style="margin-top:10px; display:block;"><strong>📄 GitHub Gist ID (可留空，系統將自動搜尋並綁定)：</strong></label>
                     <input id="gistIdInput" type="text" placeholder="留空時，系統會在同步時自動尋找已有的 Gist" onchange="saveSettings(false)">
                 </div>
 
-                <div style="margin-top:12px;">
+                <div style="margin-top:14px;">
                     <button class="primary btn-sm" onclick="saveSettings(true)">💾 儲存設定並同步</button>
                     <button class="secondary btn-sm" onclick="resetToDefault()">🔄 重置預設值</button>
                 </div>
@@ -494,7 +608,7 @@ details summary:hover {
 
     <div class="card sticky-search">
         <input id="wordInput" placeholder="輸入英文單字（含動態變形、複數）或中文..." onkeydown="handleKeyDown(event)">
-        <div style="display:flex; gap:8px; margin-top:8px;">
+        <div style="display:flex; gap:8px; margin-top:10px;">
             <button id="searchBtn" class="primary" style="flex:2;" onclick="lookupWord()">🤖 Gemini 深入分析</button>
             <button class="voice-female" style="flex:1;" onclick="speakText(null, 'female')">👩 女聲</button>
             <button class="voice-male" style="flex:1;" onclick="speakText(null, 'male')">👨 男聲</button>
@@ -503,13 +617,20 @@ details summary:hover {
 
     <div class="card" id="resultContainer">
         <h2>AI 分析結果</h2>
-        <div id="result" style="color:#666;">請輸入單字或中文進行查詢</div>
+        <div id="result" style="color:var(--text-muted);">請輸入單字或中文進行查詢</div>
     </div>
 
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-            <h2 style="margin: 0;">我的單字庫 <span id="wordCount" style="font-size:1rem; color:#666; font-weight:normal;">(0)</span></h2>
-            <div id="syncStatusInfo" style="font-size:0.85rem; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; padding:4px 12px; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                我的單字庫
+                <div class="count-badge-box">
+                    <span>💻 本地: <strong id="localWordCount">0</strong></span>
+                    <span>|</span>
+                    <span>☁️ 雲端: <strong id="cloudWordCount">-</strong></span>
+                </div>
+            </h2>
+            <div id="syncStatusInfo" style="font-size:0.82rem; color:var(--text-muted); background:#f8f6f1; border:1px solid var(--border-color); padding:4px 12px; border-radius:6px; display:inline-flex; align-items:center; gap:6px;">
                 ☁️ 雲端狀態：檢查中...
             </div>
         </div>
@@ -538,14 +659,39 @@ details summary:hover {
                 <button id="filterDueBtn" class="warning" style="width:auto; min-width:140px; margin:0;" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
             </div>
 
-            <div class="btn-toolbar-group">
-                <button class="success btn-sm" onclick="performFullSync(true)">🔄 雙向同步</button>
-                <button class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 批次補齊</button>
-                <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
-                <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
-                <button class="secondary btn-sm" onclick="toggleAllTranslations()">👁️ 翻譯</button>
-                <button class="secondary btn-sm" onclick="exportData()">💾 匯出</button>
-                <button class="secondary btn-sm" onclick="document.getElementById('fileInput').click()">📥 匯入</button>
+            <!-- 修復後的防破框工具列區塊 -->
+            <div class="toolbar-section">
+                <div class="toolbar-grid">
+                    <!-- 雲端與備份 -->
+                    <div class="toolbar-card">
+                        <div class="toolbar-card-title">☁️ 雲端與備份</div>
+                        <div class="toolbar-btn-group">
+                            <button class="success btn-sm" onclick="performFullSync(true)">🔄 雙向同步</button>
+                            <button class="warning btn-sm" onclick="pullCloudToLocal(true)">☁️ 覆蓋本地</button>
+                            <button class="danger btn-sm" onclick="clearLocalDatabase()">🗑️ 清空本地</button>
+                        </div>
+                    </div>
+
+                    <!-- 檢視與顯示 -->
+                    <div class="toolbar-card">
+                        <div class="toolbar-card-title">👁️ 展開與翻譯</div>
+                        <div class="toolbar-btn-group">
+                            <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
+                            <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
+                            <button class="secondary btn-sm" onclick="toggleAllTranslations()">👁️ 翻譯</button>
+                        </div>
+                    </div>
+
+                    <!-- 資料與工具 -->
+                    <div class="toolbar-card">
+                        <div class="toolbar-card-title">🛠️ 資料管理</div>
+                        <div class="toolbar-btn-group">
+                            <button class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 批次補齊</button>
+                            <button class="secondary btn-sm" onclick="exportData()">💾 匯出</button>
+                            <button class="secondary btn-sm" onclick="document.getElementById('fileInput').click()">📥 匯入</button>
+                        </div>
+                    </div>
+                </div>
                 <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
             </div>
         </div>
@@ -586,35 +732,35 @@ function updateSyncStatusDisplay(type = 'normal') {
 
     if (!token) {
         infoEl.innerHTML = `⚠️ 雲端狀態：未設定 GitHub Token`;
-        infoEl.style.borderColor = '#fcd34d';
-        infoEl.style.background = '#fffbeb';
-        infoEl.style.color = '#92400e';
+        infoEl.style.borderColor = '#eddcca';
+        infoEl.style.background = '#fcf8f2';
+        infoEl.style.color = '#8a5323';
     } else if (!gistId) {
         infoEl.innerHTML = `⚠️ 雲端狀態：未綁定 Gist (同步時將自動尋找/建立)`;
-        infoEl.style.borderColor = '#fcd34d';
-        infoEl.style.background = '#fffbeb';
-        infoEl.style.color = '#92400e';
+        infoEl.style.borderColor = '#eddcca';
+        infoEl.style.background = '#fcf8f2';
+        infoEl.style.color = '#8a5323';
     } else {
         if (type === 'syncing') {
             infoEl.innerHTML = `🔄 雲端狀態：同步中...${shortGist}`;
-            infoEl.style.borderColor = '#93c5fd';
-            infoEl.style.background = '#eff6ff';
-            infoEl.style.color = '#1d4ed8';
+            infoEl.style.borderColor = '#cee0ec';
+            infoEl.style.background = '#f2f7fa';
+            infoEl.style.color = '#2b5578';
         } else if (type === 'success') {
             infoEl.innerHTML = `✅ 雲端狀態：已同步 (${timeStr})${shortGist}`;
-            infoEl.style.borderColor = '#bbf7d0';
-            infoEl.style.background = '#f0fdf4';
-            infoEl.style.color = '#15803d';
+            infoEl.style.borderColor = '#cbe0d2';
+            infoEl.style.background = '#f2f7f4';
+            infoEl.style.color = '#2d5e3c';
         } else if (type === 'error') {
             infoEl.innerHTML = `❌ 雲端狀態：同步失敗${shortGist}`;
-            infoEl.style.borderColor = '#fecaca';
-            infoEl.style.background = '#fef2f2';
-            infoEl.style.color = '#b91c1c';
+            infoEl.style.borderColor = '#ebd0d0';
+            infoEl.style.background = '#fcf2f2';
+            infoEl.style.color = '#8a3333';
         } else {
             infoEl.innerHTML = `☁️ 雲端狀態：已就緒 (${timeStr})${shortGist}`;
-            infoEl.style.borderColor = '#e2e8f0';
-            infoEl.style.background = '#f8fafc';
-            infoEl.style.color = '#475569';
+            infoEl.style.borderColor = 'var(--border-color)';
+            infoEl.style.background = '#f8f6f1';
+            infoEl.style.color = 'var(--text-muted)';
         }
     }
 }
@@ -645,6 +791,7 @@ function resetToDefault() {
         document.getElementById("apiKeyInput").value = DEFAULT_API_KEY;
         document.getElementById("githubTokenInput").value = "";
         document.getElementById("gistIdInput").value = "";
+        document.getElementById("cloudWordCount").textContent = "-";
         updateSyncStatusDisplay();
         alert("🔄 已成功重置設定！");
     }
@@ -712,9 +859,6 @@ function getItemTime(item) {
     return Number(t) || 0;
 }
 
-/**
- * 🔀 核心合併邏輯：完全聯集合併，並依最新時間紀錄 (updatedAt/createdAt) 做保留與覆蓋
- */
 function mergeDatasets(localList, remoteList) {
     const map = new Map();
 
@@ -744,9 +888,6 @@ function mergeDatasets(localList, remoteList) {
     return Array.from(map.values());
 }
 
-/**
- * 🔄 完整雙向同步流程 (移除 Cache-Control Header 避免跨域預檢失敗，以網址時間戳記防止快取)
- */
 async function performFullSync(interactive = false) {
     const token = getGitHubToken();
     if (!token) {
@@ -764,7 +905,6 @@ async function performFullSync(interactive = false) {
     try {
         const timestamp = Date.now();
 
-        // 🔍 防重複創建核心：若沒設定 Gist ID，先查詢 GitHub 是否已有備份檔 Gist
         if (!gistId) {
             const listRes = await fetch(`https://api.github.com/gists?per_page=100&t=${timestamp}`, {
                 method: "GET",
@@ -784,37 +924,43 @@ async function performFullSync(interactive = false) {
             }
         }
 
-		// 1. 下載雲端資料（含防截斷與防快取處理）
         if (gistId) {
             const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
                 method: "GET",
                 headers: { "Authorization": `token ${token}` }
             });
 
-			if (getRes.ok) {
-				const gistData = await getRes.json();
-				const file = gistData.files[fileName] || Object.values(gistData.files)[0];
-				if (file) {
-					let contentStr = file.content;
-					// 若 Gist 內容被 GitHub 截斷，強制抓取 raw_url 完整資料
-					if (file.truncated && file.raw_url) {
-						const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
-						contentStr = await rawRes.text();
-				}
-				if (contentStr) {
-					remoteWords = safeParseJSON(contentStr);
-					}
-				}
-			}
-		}
-        // 2. 進行雙向聯集合併
+            if (!getRes.ok) {
+                throw new Error(`無法連線或讀取雲端 Gist (HTTP ${getRes.status})，已安全中斷同步以保護雲端資料！`);
+            }
+
+            const gistData = await getRes.json();
+            const file = gistData.files[fileName] || Object.values(gistData.files)[0];
+            if (file) {
+                let contentStr = file.content;
+                if (file.truncated && file.raw_url) {
+                    const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
+                    if (!rawRes.ok) {
+                        throw new Error("抓取雲端完整備份檔失敗，已中斷同步以保護雲端資料！");
+                    }
+                    contentStr = await rawRes.text();
+                }
+                if (contentStr) {
+                    remoteWords = safeParseJSON(contentStr);
+                }
+            }
+        }
+
+        const cloudCountSpan = document.getElementById("cloudWordCount");
+        if (cloudCountSpan) {
+            cloudCountSpan.textContent = remoteWords.filter(w => !w.isDeleted).length;
+        }
+
         const localWords = getWords();
         const mergedWords = mergeDatasets(localWords, remoteWords);
 
-        // 3. 同步寫回本地並更新畫面
         saveWords(mergedWords, false);
 
-        // 4. 上傳完整聯集結果至雲端 Gist
         const content = JSON.stringify(mergedWords, null, 2);
         let pushRes;
 
@@ -847,7 +993,7 @@ async function performFullSync(interactive = false) {
 
         if (!pushRes.ok) {
             const errData = await pushRes.json();
-            throw new Error(errData.message || "GitHub API 回應失敗");
+            throw new Error(errData.message || "GitHub API 上傳回應失敗");
         }
 
         const pushData = await pushRes.json();
@@ -862,6 +1008,7 @@ async function performFullSync(interactive = false) {
         updateSyncStatusDisplay('success');
 
         const activeCount = mergedWords.filter(w => !w.isDeleted).length;
+        if (cloudCountSpan) cloudCountSpan.textContent = activeCount;
 
         if (interactive) {
             alert(`✅ 雙向同步完成！\n雙端同步單字總計：${activeCount} 個有效單字\n(Gist ID: ${gistId})`);
@@ -872,6 +1019,99 @@ async function performFullSync(interactive = false) {
         if (interactive) {
             alert(`❌ 雙向同步失敗：${err.message}`);
         }
+    }
+}
+
+function clearLocalDatabase() {
+    const localWords = getWords().filter(w => !w.isDeleted);
+    if (localWords.length === 0) {
+        alert("本地單字庫目前已經是空的！");
+        return;
+    }
+
+    if (confirm(`⚠️ 確定要刪除「本地單字庫」的 ${localWords.length} 個單字嗎？\n\n注意：此操作僅會清空這台裝置上的資料，不會影響雲端 Gist 備份。清空後您可以隨時使用「☁️ 雲端蓋本地」重新下載。`)) {
+        localStorage.removeItem("vocabDB");
+        renderWordList();
+        alert("🗑️ 本地單字庫已成功清空！");
+    }
+}
+
+async function pullCloudToLocal(interactive = true) {
+    const token = getGitHubToken();
+    let gistId = getGistId();
+
+    if (!token) {
+        if (interactive) alert("請先在「系統連線設定」中填寫您的 GitHub Personal Access Token！");
+        return;
+    }
+
+    if (interactive && !confirm("確定要將「雲端單字庫」的備份完整覆蓋至本地嗎？\n（此操作會以雲端資料為主）")) {
+        return;
+    }
+
+    updateSyncStatusDisplay('syncing');
+
+    try {
+        const timestamp = Date.now();
+        const fileName = "toeic_vocab_db.json";
+
+        if (!gistId) {
+            const listRes = await fetch(`https://api.github.com/gists?per_page=100&t=${timestamp}`, {
+                headers: { "Authorization": `token ${token}` }
+            });
+            if (listRes.ok) {
+                const gists = await listRes.json();
+                const existingGist = gists.find(g => g.files && g.files[fileName]);
+                if (existingGist) {
+                    gistId = existingGist.id;
+                    localStorage.setItem("gist_id", gistId);
+                    const gistInput = document.getElementById("gistIdInput");
+                    if (gistInput) gistInput.value = gistId;
+                }
+            }
+        }
+
+        if (!gistId) {
+            throw new Error("找不到可用的雲端備份檔 Gist ID，請確認是否曾上傳或建立備份。");
+        }
+
+        const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
+            headers: { "Authorization": `token ${token}` }
+        });
+
+        if (!getRes.ok) {
+            throw new Error(`無法讀取雲端 Gist (HTTP ${getRes.status})`);
+        }
+
+        const gistData = await getRes.json();
+        const file = gistData.files[fileName] || Object.values(gistData.files)[0];
+        if (!file) throw new Error("雲端 Gist 中未找不到單字資料檔案");
+
+        let contentStr = file.content;
+        if (file.truncated && file.raw_url) {
+            const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
+            if (!rawRes.ok) throw new Error("下載完整備份檔失敗");
+            contentStr = await rawRes.text();
+        }
+
+        const remoteWords = safeParseJSON(contentStr);
+
+        saveWords(remoteWords, false);
+
+        const activeCount = remoteWords.filter(w => !w.isDeleted).length;
+        const cloudCountSpan = document.getElementById("cloudWordCount");
+        if (cloudCountSpan) cloudCountSpan.textContent = activeCount;
+
+        localStorage.setItem("last_sync_time", Date.now());
+        updateSyncStatusDisplay('success');
+
+        if (interactive) {
+            alert(`✅ 已成功將雲端單字庫（共 ${activeCount} 個單字）下載並覆蓋至本地！`);
+        }
+    } catch (err) {
+        console.error("雲端下載失敗:", err);
+        updateSyncStatusDisplay('error');
+        if (interactive) alert(`❌ 雲端下載失敗：${err.message}`);
     }
 }
 
@@ -1220,7 +1460,7 @@ async function lookupWord() {
     const renderLogs = () => {
         resultDiv.innerHTML = `
             <div class="status-log-box">
-                <div style="font-weight:bold; margin-bottom:8px; color:#0078d4;">🔄 AI 分析即時狀態：</div>
+                <div style="font-weight:600; margin-bottom:8px; color:var(--color-primary);">🔄 AI 分析即時狀態：</div>
                 ${logs.map((l, idx) => `
                     <div class="log-item ${idx === logs.length - 1 ? 'log-active' : ''} ${l.isError ? 'log-error' : ''}">
                         ${l.msg}
@@ -1299,7 +1539,7 @@ async function lookupWord() {
     } catch (error) {
         console.error(error);
         resultDiv.innerHTML = `
-            <div style="color:red; line-height: 1.6; padding:10px; background:#fff0f0; border:1px solid #ffcdd2; border-radius:6px;">
+            <div style="color:var(--color-danger); line-height: 1.6; padding:12px; background:#fcf2f2; border:1px solid #ebd0d0; border-radius:var(--radius-sm);">
                 ❌ <strong>查詢失敗或連線中斷：</strong><br>${error.message}
             </div>`;
     } finally {
@@ -1337,9 +1577,9 @@ function formatExampleHTML(enText, zhText, legacyText, exampleNum) {
             <div class="example-box">
                 <div class="example-en">${en}</div>
                 ${zh ? `
-                <div class="zh-wrapper" style="margin-top: 6px; border-top: 1px dotted #e2e8f0; padding-top: 6px; font-size: 0.92rem;">
+                <div class="zh-wrapper" style="margin-top: 6px; border-top: 1px dotted var(--border-dashed); padding-top: 6px; font-size: 0.9rem;">
                     <button class="zh-toggle-btn" onclick="toggleZh(this)">👁️ 翻譯</button>
-                    <span class="zh-text hidden" style="color: #555;">${zh.replace(/^[（\(]\s*/, '').replace(/\s*[）\)]$/, '')}</span>
+                    <span class="zh-text hidden" style="color: var(--text-muted);">${zh.replace(/^[（\(]\s*/, '').replace(/\s*[）\)]$/, '')}</span>
                 </div>` : ''}
             </div>
         </div>
@@ -1372,13 +1612,13 @@ function renderVerbTensesBox(vt) {
         return '';
     }
     return `
-        <div style="background: #fff8f0; border: 1px solid #fed7aa; border-radius: 6px; padding: 10px; margin: 10px 0;">
-            <div style="font-weight: bold; color: #c2410c; margin-bottom: 6px; font-size: 0.9rem;">🔥 獨立動詞三態資訊欄：</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; font-size: 0.88rem;">
-                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>原形:</strong> ${vt.base || '-'}</div>
-                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>過去式:</strong> ${vt.past || '-'}</div>
-                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>過去分詞:</strong> ${vt.pastParticiple || '-'}</div>
-                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #ffedd5;"><strong>現在分詞:</strong> ${vt.presentParticiple || '-'}</div>
+        <div style="background: #fcf8f2; border: 1px solid #eddcca; border-radius: var(--radius-sm); padding: 10px 12px; margin: 10px 0;">
+            <div style="font-weight: 600; color: #8a5323; margin-bottom: 6px; font-size: 0.88rem;">🔥 獨立動詞三態資訊欄：</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; font-size: 0.85rem;">
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #f2e6d8;"><strong>原形:</strong> ${vt.base || '-'}</div>
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #f2e6d8;"><strong>過去式:</strong> ${vt.past || '-'}</div>
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #f2e6d8;"><strong>過去分詞:</strong> ${vt.pastParticiple || '-'}</div>
+                <div style="background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid #f2e6d8;"><strong>現在分詞:</strong> ${vt.presentParticiple || '-'}</div>
             </div>
         </div>
     `;
@@ -1386,13 +1626,13 @@ function renderVerbTensesBox(vt) {
 
 function renderTargetScoreBadge(targetScore) {
     if (!targetScore || targetScore === '-') return '';
-    let bg = '#eff6ff', color = '#1d4ed8', border = '#bfdbfe';
+    let bg = '#f2f7fa', color = '#2b5578', border = '#cee0ec';
     if (targetScore.includes('860')) {
-        bg = '#fef3c7'; color = '#b45309'; border = '#fde68a';
+        bg = '#fcf8f2'; color = '#8a5323'; border = '#eddcca';
     } else if (targetScore.includes('750')) {
-        bg = '#f0fdf4'; color = '#15803d'; border = '#bbf7d0';
+        bg = '#f2f7f4'; color = '#2d5e3c'; border = '#cbe0d2';
     }
-    return `<span style="background: ${bg}; color: ${color}; border: 1px solid ${border}; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">🎯 ${targetScore}</span>`;
+    return `<span style="background: ${bg}; color: ${color}; border: 1px solid ${border}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">🎯 ${targetScore}</span>`;
 }
 
 function renderCardHTML(item, isSearchResult = false) {
@@ -1424,15 +1664,15 @@ function renderCardHTML(item, isSearchResult = false) {
 
     return `
         <div class="word-card">
-            <div style="font-size:1.1rem; font-weight:bold; color:#0078d4; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <div style="font-size:1.1rem; font-weight:600; color:var(--color-primary); display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                 <span>${displayWord}</span> ${posText} ${phoneticText}
                 <span class="zh-wrapper">
                     <button class="zh-toggle-btn" onclick="toggleZh(this)">👁️ 翻譯</button>
-                    <span class="zh-text hidden" style="font-weight:normal; color:#555;">[${item.chinese}]</span>
+                    <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted);">[${item.chinese}]</span>
                 </span>
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">${categoryBadge} ${targetScoreBadge}</div>
             </div>
-            <div class="detail-content" style="border-top:1px dashed #eee; margin-top:8px;">
+            <div class="detail-content" style="border-top:1px dashed var(--border-dashed); margin-top:8px;">
                 ${verbTensesHTML}
                 <p><strong>📌 詞性形態：</strong>${formHTML}</p>
                 <p><strong>🧩 字根字首拆解：</strong>${rootAnalysis}</p>
@@ -1451,7 +1691,7 @@ function renderCardHTML(item, isSearchResult = false) {
                 ${ex2HTML}
                 ${ex3HTML}
             </div>
-            ${isSearchResult ? `<button class="primary" style="width:100%; margin-top:10px;" onclick="addCurrentToList()">➕ 保存到我的單字庫 (雙向自動同步)</button>` : ''}
+            ${isSearchResult ? `<button class="primary" style="width:100%; margin-top:12px;" onclick="addCurrentToList()">➕ 保存到我的單字庫 (雙向自動同步)</button>` : ''}
         </div>
     `;
 }
@@ -1817,8 +2057,10 @@ function renderWordList() {
     const filterText = document.getElementById("filterInput") ? document.getElementById("filterInput").value.toLowerCase().trim() : "";
     const sortType = document.getElementById("sortSelect") ? document.getElementById("sortSelect").value : "time-desc";
     const wordListDiv = document.getElementById("wordList");
-    const countSpan = document.getElementById("wordCount");
+    const localCountSpan = document.getElementById("localWordCount");
     const dueCountSpan = document.getElementById("dueCount");
+
+    if (localCountSpan) localCountSpan.textContent = activeWords.length;
 
     updateSyncStatusDisplay('normal');
 
@@ -1872,13 +2114,11 @@ function renderWordList() {
         return 0;
     });
 
-    countSpan.textContent = `(${filteredWords.length}${filterText || filterDueOnly ? ' / 總計 ' + activeWords.length : ''})`;
-
     if (filteredWords.length === 0) {
         if (filterDueOnly) {
-            wordListDiv.innerHTML = "<p style='color:#107c10; font-weight:bold; padding:10px; background:#eefbe8; border-radius:6px;'>🎉 棒極了！目前沒有需要複習的單字！</p>";
+            wordListDiv.innerHTML = "<p style='color:#326042; font-weight:600; padding:12px; background:#e2ede5; border-radius:var(--radius-sm);'>🎉 棒極了！目前沒有需要複習的單字！</p>";
         } else {
-            wordListDiv.innerHTML = filterText ? "<p style='color:#777;'>沒有符合條件的單字。</p>" : "<p style='color:#777;'>目前尚無儲存的單字。</p>";
+            wordListDiv.innerHTML = filterText ? "<p style='color:var(--text-muted);'>沒有符合條件的單字。</p>" : "<p style='color:var(--text-muted);'>目前尚無儲存的單字。</p>";
         }
         return;
     }
@@ -1937,7 +2177,7 @@ function renderWordList() {
         return `
             <div class="word-card">
                 <div class="word-card-top">
-                    <div style="font-size:0.8rem; color:#888;">📅 ${timeString}</div>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">📅 ${timeString}</div>
                     <div class="word-actions">
                         <button class="success btn-sm" onclick="markMastery(${realIndex}, true)">✅ 記得</button>
                         <button class="danger btn-sm" onclick="markMastery(${realIndex}, false)">❌ 忘記</button>
@@ -1958,7 +2198,7 @@ function renderWordList() {
                         ${cleanWord} ${posTag} ${phoneticText}
                         <span class="zh-wrapper">
                             <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️ 翻譯</button>
-                            <span class="zh-text hidden" style="font-weight:normal; color:#555;">[${item.chinese}]</span>
+                            <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted);">[${item.chinese}]</span>
                         </span>
                         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">${categoryBadge} ${targetScoreBadge}</div>
                     </summary>
@@ -2045,7 +2285,6 @@ function importData(event) {
     event.target.value = '';
 }
 
-// 📱 喚醒分頁 / 切換網頁時自動進行雙向同步
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
         if (getGitHubToken()) {
@@ -2054,7 +2293,6 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
-// 🚀 頁面載入後自動嘗試雙向同步與初始渲染
 window.addEventListener('DOMContentLoaded', () => {
     renderWordList();
     if (getGitHubToken()) {
