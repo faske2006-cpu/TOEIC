@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>AI TOEIC 全方位單字學習與 SRS 複習系統 (Gist 雙向自動同步版)</title>
+<title>AI TOEIC 全方位單字學習與 SRS 複習系統 (旗艦進階版)</title>
 
 <style>
 :root {
@@ -54,7 +54,7 @@ body {
 }
 
 .container {
-    max-width: 900px;
+    max-width: 920px;
     margin: auto;
 }
 
@@ -124,7 +124,7 @@ h2 {
 }
 
 input, select {
-    padding: 12px 14px;
+    padding: 10px 12px;
     margin-top: 4px;
     margin-bottom: 4px;
     border: 1px solid var(--border-color);
@@ -168,6 +168,7 @@ button {
     letter-spacing: 0.2px;
     min-height: 42px;
     touch-action: manipulation;
+    white-space: nowrap;
 }
 
 button:hover {
@@ -252,11 +253,6 @@ button:disabled {
 .clear-search-btn:hover {
     color: var(--text-main);
     background: transparent;
-}
-
-.control-panel select {
-    margin: 0;
-    width: 100%;
 }
 
 /* 📱 手機優化：工具列網格佈局 */
@@ -347,6 +343,7 @@ button:disabled {
     border-radius: var(--radius-md);
     background: #fdfcf9;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .word-card-top {
@@ -411,6 +408,18 @@ button:disabled {
     line-height: 1.2;
 }
 
+.tag-badge {
+    background-color: #e8eef3;
+    color: #3a5a78;
+    border: 1px solid #c8d6e5;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
 .badge-irregular-verb {
     background-color: #f5e1e1;
     color: #8a3333;
@@ -450,6 +459,7 @@ details summary {
     line-height: 1.4;
 }
 
+/* 🎨 全面改為單欄條列式，優化閱讀體驗 */
 .detail-content {
     margin-top: 10px;
     padding-top: 10px;
@@ -458,14 +468,48 @@ details summary {
     line-height: 1.5;
     width: 100%;
     color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.detail-content p {
-    margin: 6px 0;
+.info-block {
+    background: #f9f8f5;
+    border: 1px solid #e8e4dc;
+    border-radius: var(--radius-md);
+    padding: 12px;
+}
+
+.info-block-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-dashed);
+    padding-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 強制改為單欄結構 */
+.info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-item {
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.info-item strong {
+    color: var(--text-main);
 }
 
 .example-wrapper {
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 .example-title-row {
@@ -536,21 +580,11 @@ details summary {
     font-weight: normal;
 }
 
-.category-badge {
-    display: inline-block;
-    background: #e5edf2;
-    color: #3b6078;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 0.72rem;
-    font-weight: 600;
-}
-
 .status-log-box {
     background: #f6f4ee;
     border: 1px solid var(--border-color);
     border-left: 4px solid var(--color-primary);
-    padding: 10px 12px;
+    padding: 12px;
     border-radius: var(--radius-sm);
     font-size: 0.85rem;
     line-height: 1.5;
@@ -566,8 +600,34 @@ details summary {
     font-weight: 600;
 }
 
-.status-log-box .log-error {
-    color: var(--color-danger);
+.progress-container {
+    width: 100%;
+    background-color: #e2ded7;
+    border-radius: 8px;
+    margin: 10px 0 14px 0;
+    overflow: hidden;
+    height: 14px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: var(--color-primary);
+    transition: width 0.3s ease;
+    border-radius: 8px;
+}
+
+.model-badge {
+    display: inline-block;
+    background-color: #e5edf2;
+    color: #2b5578;
+    border: 1px solid #cee0ec;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 8px;
 }
 
 .count-badge-box {
@@ -581,6 +641,92 @@ details summary {
     color: var(--text-muted);
 }
 
+/* Part 5 測驗與易混淆矩陣 */
+.quiz-box {
+    background: #f7f9fa;
+    border: 1px solid #d0dfeb;
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-top: 4px;
+}
+
+.quiz-title {
+    font-weight: 700;
+    color: #2b5578;
+    font-size: 0.88rem;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.quiz-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.quiz-opt-btn {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    text-align: left;
+    justify-content: flex-start;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    min-height: 38px;
+    border-radius: var(--radius-sm);
+}
+
+.quiz-opt-btn:hover {
+    background: #eef4f8;
+    border-color: #5c7080;
+}
+
+.quiz-opt-btn.correct {
+    background: #e2ede5 !important;
+    border-color: #6c8d7b !important;
+    color: #2d5e3c !important;
+    font-weight: bold;
+}
+
+.quiz-opt-btn.wrong {
+    background: #f3e2e2 !important;
+    border-color: #b86b6b !important;
+    color: #8c3b3b !important;
+}
+
+.quiz-explanation {
+    margin-top: 8px;
+    padding: 8px;
+    background: #ffffff;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    color: var(--text-main);
+    border-left: 3px solid #2b5578;
+    display: none;
+}
+
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 0.82rem;
+}
+
+.matrix-table th, .matrix-table td {
+    border: 1px solid var(--border-color);
+    padding: 6px 8px;
+    text-align: left;
+}
+
+.matrix-table th {
+    background: #f0ebe1;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
 /* 💻 平板與大螢幕適應 */
 @media (min-width: 650px) {
     body { padding: 24px; }
@@ -589,8 +735,9 @@ details summary {
     .word-card-top { flex-direction: row; justify-content: space-between; align-items: center; }
     .word-actions { display: flex; }
     .control-row { flex-wrap: nowrap; }
-    .search-input-wrap { width: auto; flex-grow: 1; }
-    .control-panel select { width: auto; flex-grow: 1; }
+    .search-input-wrap { flex: 2; }
+    #sortSelect { flex: 1; }
+    #filterDueBtn { flex: 0 0 auto; width: auto; }
     .stat-bar { display: flex; flex-wrap: wrap; text-align: left; }
     .stat-badge { flex-direction: row; gap: 4px; padding: 5px 12px; border-radius: 20px; }
     .stat-badge span { font-size: 0.85rem; }
@@ -626,7 +773,7 @@ details summary {
         </details>
     </div>
 
-    <!-- Sticky 搜尋區塊 (手機高度與排版優化) -->
+    <!-- Sticky 搜尋區塊 -->
     <div class="card sticky-search">
         <input id="wordInput" placeholder="輸入英文單字或中文..." onkeydown="handleKeyDown(event)">
         <div class="search-controls-row">
@@ -668,9 +815,6 @@ details summary {
                     <input id="filterInput" placeholder="🔍 搜尋已儲存單字..." oninput="handleFilterInput()">
                     <button id="clearSearchBtn" class="clear-search-btn" onclick="clearSearchFilter()">✖</button>
                 </div>
-            </div>
-            
-            <div class="control-row">
                 <select id="sortSelect" onchange="renderWordList()">
                     <option value="time-desc" selected>⏱️ 時間 (最新 ➔ 最舊)</option>
                     <option value="time-asc">⏱️ 時間 (最舊 ➔ 最新)</option>
@@ -680,7 +824,7 @@ details summary {
                     <option value="alpha-desc">🔤 字母 (Z ➔ A)</option>
                     <option value="srs-due">🎯 複習優先</option>
                 </select>
-                <button id="filterDueBtn" class="warning" style="width:100%;" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
+                <button id="filterDueBtn" class="warning" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
             </div>
 
             <div class="toolbar-section">
@@ -695,9 +839,9 @@ details summary {
                         </div>
                     </div>
 
-                    <!-- 檢視與顯示 -->
+                    <!-- 檢視與模式 -->
                     <div class="toolbar-card">
-                        <div class="toolbar-card-title">👁️ 展開與翻譯</div>
+                        <div class="toolbar-card-title">👁️ 檢視與模式</div>
                         <div class="toolbar-btn-group">
                             <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
                             <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
@@ -751,7 +895,6 @@ function updateSyncStatusDisplay(type = 'normal') {
     const lastSync = localStorage.getItem("last_sync_time");
     
     let timeStr = lastSync ? new Date(parseInt(lastSync)).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '未同步';
-    let shortGist = gistId ? ` (...${gistId.slice(-4)})` : '';
 
     if (!token) {
         infoEl.innerHTML = `⚠️ 未設定 Token`;
@@ -1207,17 +1350,20 @@ function safeJSONParseAI(rawText) {
     }
 }
 
-async function fetchGeminiAPI(prompt, onLog) {
+async function fetchGeminiAPI(prompt, onProgress) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("請先填寫 Gemini API Key！");
 
-    const log = (msg, isError = false) => { if (onLog) onLog(msg, isError); };
-    log("🔍 獲取可用模型...");
+    const updateProgress = (pct, msg) => {
+        if (onProgress) onProgress(pct, msg);
+    };
+
+    updateProgress(10, "🔍 正在連接 Google AI API 檢查可用模型清單...");
 
     let candidateModels = [];
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
         const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: controller.signal });
         clearTimeout(timeoutId);
 
@@ -1229,42 +1375,66 @@ async function fetchGeminiAPI(prompt, onLog) {
                     .map(m => m.name.replace(/^models\//, ''));
             }
         }
-    } catch (e) {}
+    } catch (e) {
+        console.warn("無法取得模型列表，使用預設高速模型", e);
+    }
 
     if (candidateModels.length === 0) {
         candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
     }
 
-    let lastError = null;
-    for (const model of candidateModels) {
+    updateProgress(30, `📊 成功檢測到 ${candidateModels.length} 個可用 Gemini 模型：<br><small style="color:#787571;">(${candidateModels.join(", ")})</small>`);
+
+    const preferredModels = candidateModels.filter(m => m.includes("flash") || m.includes("2.0") || m.includes("1.5"));
+    const targetModels = preferredModels.length > 0 ? preferredModels.slice(0, 3) : candidateModels.slice(0, 3);
+
+    updateProgress(50, `🚀 啟動模型極速分析器 (${targetModels.join(", ")})...`);
+
+    const callSingleModel = async (model) => {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        try {
-            log(`⏳ 分析中 [${model}]...`);
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 12000);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-            const response = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { responseMimeType: "application/json" }
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            const responseText = await response.text();
-            let data = JSON.parse(responseText);
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
 
-            if (response.ok && data.candidates && data.candidates[0]) {
-                log(`🎉 分析完成！`);
-                return data;
-            }
-        } catch (err) {
-            lastError = err.message;
+        if (!response.ok) throw new Error(`[${model}] HTTP error! status: ${response.status}`);
+
+        const responseText = await response.text();
+        const data = JSON.parse(responseText);
+
+        if (data.candidates && data.candidates[0]) {
+            return { data, usedModel: model };
         }
+        throw new Error(`[${model}] 回傳無效內容`);
+    };
+
+    try {
+        updateProgress(80, `⚡ 等待模型回應並生成多益測驗與考點...`);
+        const result = await Promise.any(targetModels.map(m => callSingleModel(m)));
+        updateProgress(100, `🎉 分析完成！`);
+        return result;
+    } catch (err) {
+        updateProgress(60, `⚠️ 快速模型回應超時，啟動備用模型...`);
+        for (const model of candidateModels) {
+            try {
+                const res = await callSingleModel(model);
+                updateProgress(100, `🎉 備用模型分析完成！`);
+                return res;
+            } catch (e) {
+                continue;
+            }
+        }
+        throw new Error("無法連線至 Gemini API，請檢查 API Key 或網路連線");
     }
-    throw new Error(lastError || "連線至 Gemini API 失敗");
 }
 
 async function lookupWord() {
@@ -1279,24 +1449,33 @@ async function lookupWord() {
     document.getElementById("resultContainer").scrollIntoView({ behavior: "smooth", block: "start" });
 
     let logs = [];
-    const addLog = (msg, isError = false) => {
+    const updateUI = (percent, msg, isError = false) => {
         logs.push({ msg, isError });
         resultDiv.innerHTML = `
             <div class="status-log-box">
-                <div style="font-weight:600; margin-bottom:6px; color:var(--color-primary);">🔄 AI 分析狀態：</div>
-                ${logs.map((l, idx) => `<div class="log-item ${idx === logs.length - 1 ? 'log-active' : ''}">${l.msg}</div>`).join('')}
+                <div style="font-weight:600; margin-bottom:6px; color:var(--color-primary); display:flex; justify-content:space-between; align-items:center;">
+                    <span>🔄 AI 深度分析與生成多益題目中...</span>
+                    <span><strong>${percent}%</strong></span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: ${percent}%;"></div>
+                </div>
+                <div style="max-height:180px; overflow-y:auto; padding-right:4px;">
+                    ${logs.map((l, idx) => `<div class="log-item ${idx === logs.length - 1 ? 'log-active' : ''}">${l.msg}</div>`).join('')}
+                </div>
             </div>
         `;
     };
 
-    addLog(`開始分析："${wordInput}"`);
+    updateUI(0, `開始分析："${wordInput}"`);
 
     const prompt = `你是一位專業的 TOEIC 英文教學專家。請深度分析使用者輸入的詞彙："${wordInput}"。
 若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
 回覆嚴格 JSON 格式：
 {
  "word": "對應英文",
- "targetScore": "多益分數與考頻 (如: 600分基礎)",
+ "tag": "情境分類標籤 (例如: 人力資源與企業文化、辦公室溝通、商務商談、財務會計、物流供應鏈)",
+ "targetScore": "多益分數與考頻 (如: 650分中階頻考)",
  "verbTenses": { "base": "原形", "past": "過去式", "pastParticiple": "過去分詞", "presentParticiple": "現在分詞" },
  "businessContext": "商務職場句型與中文",
  "listeningDistractors": "聽力易混淆音提示",
@@ -1307,12 +1486,24 @@ async function lookupWord() {
  "phonetic": "KK音標",
  "partOfSpeech": "詞性",
  "chinese": "中文繁體",
- "category": "多益領域",
  "toeic": "常考情境",
  "part7Synonyms": "Part 7 同義替換",
  "grammarTraps": "文法陷阱",
  "derivatives": ["衍生字1", "衍生字2"],
  "collocations": ["搭配詞1", "搭配詞2"],
+ "prepCollocations": ["核心介系詞搭配1 (如: apply for + N)", "核心介系詞搭配2"],
+ "businessEmailContext": "實用 Email/廣告情境句 (Part 6/7)",
+ "pronunciationTip": "重音與美式連音提示 (如: 重音在第二音節)",
+ "confusableMatrix": [
+    {"word": "易混淆字1", "diff": "一語點破差異/詞性不同"},
+    {"word": "易混淆字2", "diff": "差異點"}
+ ],
+ "part5Quiz": {
+    "question": "包含底線 ____ 的 Part 5 多益文法/詞彙選擇題",
+    "options": ["(A) 選項1", "(B) 選項2", "(C) 選項3", "(D) 選項4"],
+    "answer": "正確選項字號 (例如: (A))",
+    "explain": "題目解析與翻譯"
+ },
  "synonyms": ["同義字1"],
  "antonyms": ["反義字1"],
  "confusables": ["易混淆字"],
@@ -1322,7 +1513,9 @@ async function lookupWord() {
 }`;
 
     try {
-        const data = await fetchGeminiAPI(prompt, addLog);
+        const { data, usedModel } = await fetchGeminiAPI(prompt, (pct, msg) => updateUI(pct, msg));
+        
+        updateUI(95, "🧩 解析 JSON 與生成視覺卡片...");
         const rawText = data.candidates[0].content.parts[0].text;
         currentResultData = safeJSONParseAI(rawText);
         
@@ -1330,12 +1523,39 @@ async function lookupWord() {
             currentResultData.word = sanitizeWord(currentResultData.word);
         }
 
-        resultDiv.innerHTML = renderCardHTML(currentResultData, true);
+        resultDiv.innerHTML = renderCardHTML(currentResultData, true, usedModel);
     } catch (error) {
         resultDiv.innerHTML = `<div style="color:var(--color-danger); padding:10px; background:#fcf2f2; border:1px solid #ebd0d0; border-radius:var(--radius-sm);">❌ 查詢失敗：<br>${error.message}</div>`;
     } finally {
         searchBtn.disabled = false;
     }
+}
+
+function checkQuizAnswer(btn, selectedOpt, correctOpt, cardId) {
+    const parent = btn.closest('.quiz-box');
+    if (!parent) return;
+
+    const allBtns = parent.querySelectorAll('.quiz-opt-btn');
+    allBtns.forEach(b => b.disabled = true);
+
+    const isCorrect = selectedOpt.trim().startsWith(correctOpt.trim());
+
+    if (isCorrect) {
+        btn.classList.add('correct');
+        btn.innerHTML += ' ✅';
+    } else {
+        btn.classList.add('wrong');
+        btn.innerHTML += ' ❌';
+        allBtns.forEach(b => {
+            if (b.innerText.trim().startsWith(correctOpt.trim())) {
+                b.classList.add('correct');
+                b.innerHTML += ' (正確答案)';
+            }
+        });
+    }
+
+    const expDiv = parent.querySelector('.quiz-explanation');
+    if (expDiv) expDiv.style.display = 'block';
 }
 
 function formatExampleHTML(enText, zhText, legacyText, exampleNum) {
@@ -1390,7 +1610,7 @@ function renderGrammaticalForm(formText) {
 function renderVerbTensesBox(vt) {
     if (!vt || typeof vt !== 'object' || !vt.base || vt.base === 'N/A' || vt.base === '-') return '';
     return `
-        <div style="background: #fcf8f2; border: 1px solid #eddcca; border-radius: var(--radius-sm); padding: 8px 10px; margin: 8px 0;">
+        <div style="background: #fcf8f2; border: 1px solid #eddcca; border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 8px;">
             <div style="font-weight: 600; color: #8a5323; margin-bottom: 4px; font-size: 0.82rem;">🔥 動詞三態：</div>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; font-size: 0.8rem;">
                 <div style="background: white; padding: 4px 6px; border-radius: 4px; border: 1px solid #f2e6d8;"><strong>原形:</strong> ${vt.base || '-'}</div>
@@ -1402,6 +1622,11 @@ function renderVerbTensesBox(vt) {
     `;
 }
 
+function renderTagBadge(tag) {
+    if (!tag || tag === '-') return '';
+    return `<span class="tag-badge">🏷️ ${tag}</span>`;
+}
+
 function renderTargetScoreBadge(targetScore) {
     if (!targetScore || targetScore === '-') return '';
     let bg = '#f2f7fa', color = '#2b5578', border = '#cee0ec';
@@ -1410,27 +1635,71 @@ function renderTargetScoreBadge(targetScore) {
     return `<span style="background: ${bg}; color: ${color}; border: 1px solid ${border}; padding: 2px 6px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center;">🎯 ${targetScore}</span>`;
 }
 
-function renderCardHTML(item, isSearchResult = false) {
+function renderQuizBox(quizData, cardId) {
+    if (!quizData || !quizData.question || !quizData.options) return '';
+    const correctOpt = quizData.answer || 'A';
+
+    return `
+        <div class="quiz-box">
+            <div class="quiz-title">🎯 Part 5 實戰模擬題：</div>
+            <div style="font-size:0.85rem; color:var(--text-main); font-weight:500;">${quizData.question}</div>
+            <div class="quiz-options">
+                ${quizData.options.map(opt => `
+                    <button class="quiz-opt-btn" onclick="checkQuizAnswer(this, '${escapeJsStr(opt)}', '${escapeJsStr(correctOpt)}', '${cardId}')">
+                        ${opt}
+                    </button>
+                `).join('')}
+            </div>
+            <div class="quiz-explanation">
+                <strong>💡 題目解析：</strong> ${quizData.explain || '無解析'}
+            </div>
+        </div>
+    `;
+}
+
+function renderConfusableMatrix(matrix) {
+    if (!matrix || !Array.isArray(matrix) || matrix.length === 0) return '';
+    return `
+        <div style="margin-top: 4px;">
+            <div style="font-weight:600; font-size:0.85rem; color:#8a3333; margin-bottom:4px;">⚠️ 易混淆字一語點破：</div>
+            <table class="matrix-table">
+                <thead><tr><th>單字</th><th>核心差異與用法</th></tr></thead>
+                <tbody>
+                    ${matrix.map(m => `<tr><td><strong>${m.word}</strong></td><td>${m.diff}</td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderCardHTML(item, isSearchResult = false, usedModel = "") {
     const displayWord = sanitizeWord(item.word);
+    const cardId = 'card_' + Math.random().toString(36).substr(2, 9);
+
     const posText = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
     const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
-    const categoryBadge = item.category ? `<span class="category-badge">🏷️ ${item.category}</span>` : '';
+    const tagBadge = renderTagBadge(item.tag);
     const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
     const verbTensesHTML = renderVerbTensesBox(item.verbTenses);
+    const quizHTML = renderQuizBox(item.part5Quiz, cardId);
+    const matrixHTML = renderConfusableMatrix(item.confusableMatrix);
 
     const derivativesList = Array.isArray(item.derivatives) && item.derivatives.length ? item.derivatives.join("； ") : (item.derivatives || '-');
     const collocationsList = Array.isArray(item.collocations) && item.collocations.length ? item.collocations.join("； ") : (item.collocations || '-');
+    const prepList = Array.isArray(item.prepCollocations) && item.prepCollocations.length ? item.prepCollocations.join("； ") : (item.prepCollocations || '-');
     const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : (item.synonyms || '-');
     const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : (item.antonyms || '-');
-    const confusablesList = Array.isArray(item.confusables) && item.confusables.length ? item.confusables.join("； ") : (item.confusables || '-');
 
     const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1, 1);
     const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2, 2);
     const ex3HTML = formatExampleHTML(item.example3_en, item.example3_zh, null, 3);
     const formHTML = renderGrammaticalForm(item.grammaticalForm);
 
+    const modelBadgeHTML = usedModel ? `<div class="model-badge">🤖 本分析結果由模型：<strong>${usedModel}</strong> 生成</div>` : '';
+
     return `
-        <div class="word-card">
+        <div class="word-card" id="${cardId}">
+            ${modelBadgeHTML}
             <div style="font-size:1.2rem; font-weight:700; color:var(--color-primary); display:flex; flex-wrap:wrap; align-items:center; gap:4px;">
                 <span>${displayWord}</span> ${posText} ${phoneticText}
                 <span class="zh-wrapper">
@@ -1438,23 +1707,51 @@ function renderCardHTML(item, isSearchResult = false) {
                     <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:0.95rem;">[${item.chinese}]</span>
                 </span>
             </div>
-            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">${categoryBadge} ${targetScoreBadge}</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; align-items:center;">
+                ${tagBadge}
+                ${targetScoreBadge}
+            </div>
             
             <div class="detail-content">
-                ${verbTensesHTML}
-                <p><strong>📌 詞性形態：</strong>${formHTML}</p>
-                <p><strong>🧩 字根拆解：</strong>${item.rootAnalysis || '-'}</p>
-                <p><strong>💡 多益考點：</strong>${item.toeic || '-'}</p>
-                <p><strong>💼 商務句型：</strong>${item.businessContext || '-'}</p>
-                <p><strong>🎧 聽力干擾：</strong>${item.listeningDistractors || '-'}</p>
-                <p><strong>💡 記憶口訣：</strong>${item.mnemonicTip || '-'}</p>
-                <p><strong>🇬🇧🇺🇸 英美差異：</strong>${item.ukUsVariation || '無差異'}</p>
-                <p><strong>📖 Part 7 同義：</strong>${item.part7Synonyms || '-'}</p>
-                <p><strong>⚠️ 文法陷阱：</strong>${item.grammarTraps || '-'}</p>
-                <p><strong>🌱 衍生字：</strong>${derivativesList}</p>
-                <p><strong>🔗 搭配詞：</strong>${collocationsList}</p>
-                <p><strong>⚠️ 易混淆：</strong>${confusablesList}</p>
-                <p><strong>🔄 同/反義：</strong>同: ${synonymsList} ｜ 反: ${antonymsList}</p>
+                <!-- 區塊 1：核心文法與記憶口訣 -->
+                <div class="info-block">
+                    <div class="info-block-title">📌 核心文法與記憶口訣</div>
+                    ${verbTensesHTML}
+                    <div class="info-grid">
+                        <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
+                        <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
+                        <div class="info-item"><strong>重音/連音：</strong>${item.pronunciationTip || '-'}</div>
+                        <div class="info-item"><strong>記憶口訣：</strong>${item.mnemonicTip || '-'}</div>
+                    </div>
+                </div>
+
+                <!-- 區塊 2：多益實戰與情境 -->
+                <div class="info-block">
+                    <div class="info-block-title">💼 多益考點與職場情境</div>
+                    <div class="info-grid">
+                        <div class="info-item"><strong>介系詞搭配：</strong><span style="color:#2b5578; font-weight:600;">${prepList}</span></div>
+                        <div class="info-item"><strong>多益核心考點：</strong>${item.toeic || '-'}</div>
+                        <div class="info-item"><strong>商務職場句型：</strong>${item.businessContext || '-'}</div>
+                        <div class="info-item"><strong>Email/廣告情境：</strong>${item.businessEmailContext || '-'}</div>
+                        <div class="info-item"><strong>聽力干擾陷阱：</strong>${item.listeningDistractors || '-'}</div>
+                        <div class="info-item"><strong>文法陷阱提醒：</strong>${item.grammarTraps || '-'}</div>
+                        <div class="info-item"><strong>Part 7 同義替換：</strong>${item.part7Synonyms || '-'}</div>
+                    </div>
+                </div>
+
+                <!-- 區塊 3：詞彙擴充與對比 -->
+                <div class="info-block">
+                    <div class="info-block-title">🌱 詞彙擴充與同反義字</div>
+                    <div class="info-grid">
+                        <div class="info-item"><strong>衍生字詞：</strong>${derivativesList}</div>
+                        <div class="info-item"><strong>常見搭配詞：</strong>${collocationsList}</div>
+                        <div class="info-item"><strong>同義 / 反義：</strong>同: ${synonymsList} ｜ 反: ${antonymsList}</div>
+                        <div class="info-item"><strong>英美發音拼寫：</strong>${item.ukUsVariation || '無差異'}</div>
+                    </div>
+                </div>
+
+                ${matrixHTML}
+                ${quizHTML}
                 ${ex1HTML}
                 ${ex2HTML}
                 ${ex3HTML}
@@ -1521,6 +1818,7 @@ function toggleDueOnlyFilter() {
     } else {
         btn.classList.remove("primary");
         btn.classList.add("warning");
+        btn.innerHTML = `🎯 待複習 (<span id="dueCount">${document.getElementById("statDue") ? document.getElementById("statDue").textContent : 0}</span>)`;
     }
     renderWordList();
 }
@@ -1548,15 +1846,15 @@ async function updateSingleWord(index, btnEvt) {
     if (!item) return;
 
     const cleanWord = sanitizeWord(item.word);
-    if (!confirm(`確定重新分析「${cleanWord}」嗎？`)) return;
+    if (!confirm(`確定重新分析「${cleanWord}」並產生多益測驗嗎？`)) return;
 
     const btn = btnEvt ? btnEvt.target : null;
     let oldBtnText = "";
     if (btn) { oldBtnText = btn.innerHTML; btn.disabled = true; btn.innerHTML = "⏳..."; }
 
     try {
-        const prompt = `你是一位專業的 TOEIC 專家。深度分析英文單字："${cleanWord}"。回覆 JSON 格式包含完整多益考點與例句。`;
-        const data = await fetchGeminiAPI(prompt);
+        const prompt = `深度分析 TOEIC 單字："${cleanWord}"，回覆 JSON 並包含 Part 5 題目與考點。`;
+        const { data } = await fetchGeminiAPI(prompt);
         const rawText = data.candidates[0].content.parts[0].text;
         const newInfo = safeJSONParseAI(rawText);
 
@@ -1581,10 +1879,10 @@ function isWordIncomplete(item) {
     return (
         isEmptyStr(item.partOfSpeech) ||
         isEmptyStr(item.phonetic) ||
-        isEmptyStr(item.category) ||
-        isEmptyStr(item.businessContext) ||
-        isEmptyArr(item.derivatives) ||
-        !item.example3_en
+        isEmptyStr(item.tag) ||
+        isEmptyStr(item.businessEmailContext) ||
+        !item.part5Quiz ||
+        isEmptyArr(item.prepCollocations)
     );
 }
 
@@ -1595,8 +1893,8 @@ async function upgradeOldWords(evt) {
         if (!item.isDeleted && isWordIncomplete(item)) outdatedIndices.push(index);
     });
 
-    if (outdatedIndices.length === 0) return alert("🎉 所有單字皆已有完整資訊！");
-    if (!confirm(`找到 ${outdatedIndices.length} 個待補齊單字，開始補齊？`)) return;
+    if (outdatedIndices.length === 0) return alert("🎉 所有單字皆已有完整多益題與高級考點！");
+    if (!confirm(`找到 ${outdatedIndices.length} 個待補齊單字，開始升級補齊？`)) return;
 
     let successCount = 0;
     const upgradeBtn = evt ? evt.currentTarget : null;
@@ -1610,9 +1908,9 @@ async function upgradeOldWords(evt) {
         if (upgradeBtn) upgradeBtn.innerHTML = `⏳ (${i + 1}/${outdatedIndices.length})`;
 
         try {
-            if (i > 0) await new Promise(r => setTimeout(r, 2500));
-            const prompt = `深度分析 TOEIC 單字："${cleanWord}"，回覆 JSON。`;
-            const data = await fetchGeminiAPI(prompt);
+            if (i > 0) await new Promise(r => setTimeout(r, 1500));
+            const prompt = `深度分析 TOEIC 單字："${cleanWord}"，回覆 JSON 包含最新多益測驗與考點。`;
+            const { data } = await fetchGeminiAPI(prompt);
             const rawText = data.candidates[0].content.parts[0].text;
             const newInfo = safeJSONParseAI(rawText);
 
@@ -1661,7 +1959,8 @@ function renderWordList() {
 
     let filteredWords = activeWords.filter(item => {
         const matchesQuery = item.word.toLowerCase().includes(filterText) || 
-                            (item.chinese && item.chinese.toLowerCase().includes(filterText));
+                            (item.chinese && item.chinese.toLowerCase().includes(filterText)) ||
+                            (item.tag && item.tag.toLowerCase().includes(filterText));
         if (filterDueOnly) return matchesQuery && (!item.nextReviewDate || item.nextReviewDate <= now);
         return matchesQuery;
     });
@@ -1704,9 +2003,13 @@ function renderWordList() {
 
         const posTag = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
         const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
-        const categoryBadge = item.category ? `<span class="category-badge">🏷️ ${item.category}</span>` : '';
+        const tagBadge = renderTagBadge(item.tag);
         const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
         const verbTensesHTML = renderVerbTensesBox(item.verbTenses);
+
+        const cardId = 'list_card_' + Math.random().toString(36).substr(2, 9);
+        const quizHTML = renderQuizBox(item.part5Quiz, cardId);
+        const matrixHTML = renderConfusableMatrix(item.confusableMatrix);
 
         const level = item.mastery || 0;
         const stars = "★".repeat(level) + "☆".repeat(5 - level);
@@ -1716,9 +2019,9 @@ function renderWordList() {
 
         const derivativesList = Array.isArray(item.derivatives) && item.derivatives.length ? item.derivatives.join("； ") : (item.derivatives || '-');
         const collocationsList = Array.isArray(item.collocations) && item.collocations.length ? item.collocations.join("； ") : (item.collocations || '-');
+        const prepList = Array.isArray(item.prepCollocations) && item.prepCollocations.length ? item.prepCollocations.join("； ") : (item.prepCollocations || '-');
         const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : (item.synonyms || '-');
         const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : (item.antonyms || '-');
-        const confusablesList = Array.isArray(item.confusables) && item.confusables.length ? item.confusables.join("； ") : (item.confusables || '-');
 
         const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1, 1);
         const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2, 2);
@@ -1727,9 +2030,9 @@ function renderWordList() {
         const safeWord = escapeJsStr(cleanWord);
 
         return `
-            <div class="word-card">
+            <div class="word-card" id="${cardId}">
                 <div class="word-card-top">
-                    <div style="font-size:0.78rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:0.78rem; color:var(--text-muted); display:flex; justify-between; align-items:center; gap:8px;">
                         <span>📅 ${timeString}</span>
                         <span>Level ${level}</span>
                     </div>
@@ -1755,23 +2058,51 @@ function renderWordList() {
                             <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️</button>
                             <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:0.92rem;">[${item.chinese}]</span>
                         </span>
-                        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">${categoryBadge} ${targetScoreBadge}</div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center;">
+                            ${tagBadge}
+                            ${targetScoreBadge}
+                        </div>
                     </summary>
                     <div class="detail-content">
-                        ${verbTensesHTML}
-                        <p><strong>📌 詞性形態：</strong>${formHTML}</p>
-                        <p><strong>🧩 字根拆解：</strong>${item.rootAnalysis || '-'}</p>
-                        <p><strong>💡 多益考點：</strong>${item.toeic || '-'}</p>
-                        <p><strong>💼 商務句型：</strong>${item.businessContext || '-'}</p>
-                        <p><strong>🎧 聽力干擾：</strong>${item.listeningDistractors || '-'}</p>
-                        <p><strong>💡 記憶口訣：</strong>${item.mnemonicTip || '-'}</p>
-                        <p><strong>🇬🇧🇺🇸 英美差異：</strong>${item.ukUsVariation || '無差異'}</p>
-                        <p><strong>📖 Part 7 同義：</strong>${item.part7Synonyms || '-'}</p>
-                        <p><strong>⚠️ 文法陷阱：</strong>${item.grammarTraps || '-'}</p>
-                        <p><strong>🌱 衍生字：</strong>${derivativesList}</p>
-                        <p><strong>🔗 搭配詞：</strong>${collocationsList}</p>
-                        <p><strong>⚠️ 易混淆：</strong>${confusablesList}</p>
-                        <p><strong>🔄 同/反義：</strong>同: ${synonymsList} ｜ 反: ${antonymsList}</p>
+                        <!-- 區塊 1：核心文法與記憶口訣 -->
+                        <div class="info-block">
+                            <div class="info-block-title">📌 核心文法與記憶口訣</div>
+                            ${verbTensesHTML}
+                            <div class="info-grid">
+                                <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
+                                <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
+                                <div class="info-item"><strong>重音/連音：</strong>${item.pronunciationTip || '-'}</div>
+                                <div class="info-item"><strong>記憶口訣：</strong>${item.mnemonicTip || '-'}</div>
+                            </div>
+                        </div>
+
+                        <!-- 區塊 2：多益實戰與情境 -->
+                        <div class="info-block">
+                            <div class="info-block-title">💼 多益考點與職場情境</div>
+                            <div class="info-grid">
+                                <div class="info-item"><strong>介系詞搭配：</strong><span style="color:#2b5578; font-weight:600;">${prepList}</span></div>
+                                <div class="info-item"><strong>多益核心考點：</strong>${item.toeic || '-'}</div>
+                                <div class="info-item"><strong>商務職場句型：</strong>${item.businessContext || '-'}</div>
+                                <div class="info-item"><strong>Email/廣告情境：</strong>${item.businessEmailContext || '-'}</div>
+                                <div class="info-item"><strong>聽力干擾陷阱：</strong>${item.listeningDistractors || '-'}</div>
+                                <div class="info-item"><strong>文法陷阱提醒：</strong>${item.grammarTraps || '-'}</div>
+                                <div class="info-item"><strong>Part 7 同義替換：</strong>${item.part7Synonyms || '-'}</div>
+                            </div>
+                        </div>
+
+                        <!-- 區塊 3：詞彙擴充與對比 -->
+                        <div class="info-block">
+                            <div class="info-block-title">🌱 詞彙擴充與同反義字</div>
+                            <div class="info-grid">
+                                <div class="info-item"><strong>衍生字詞：</strong>${derivativesList}</div>
+                                <div class="info-item"><strong>常見搭配詞：</strong>${collocationsList}</div>
+                                <div class="info-item"><strong>同義 / 反義：</strong>同: ${synonymsList} ｜ 反: ${antonymsList}</div>
+                                <div class="info-item"><strong>英美發音拼寫：</strong>${item.ukUsVariation || '無差異'}</div>
+                            </div>
+                        </div>
+
+                        ${matrixHTML}
+                        ${quizHTML}
                         ${ex1HTML}
                         ${ex2HTML}
                         ${ex3HTML}
