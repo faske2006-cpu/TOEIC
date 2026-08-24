@@ -871,6 +871,7 @@ const SRS_INTERVALS = [0, 1, 3, 7, 14, 30];
 
 let filterDueOnly = false;
 let currentResultData = null;
+let cachedCandidateModels = null; // ⚡ 模型清單快取，避免每次查詢都發送 GET /models 網路請求
 
 function getApiKey() {
     return localStorage.getItem("gemini_api_key") || DEFAULT_API_KEY;
@@ -1387,8 +1388,7 @@ function safeJSONParseAI(rawText) {
 
 // 統一的 AI 提示詞函數
 function getAIPrompt(word) {
-    return `你是一位專業的 TOEIC 英文教學專家。請深度分析使用者輸入的詞彙："${word}"。
-若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
+    return `深度分析使用者輸入的詞彙："${word}"。若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
 回覆嚴格 JSON 格式：
 {
  "word": "對應英文",
@@ -1431,7 +1431,46 @@ function getAIPrompt(word) {
 }`;
 }
 
-// 核心 Gemini API 調用邏輯
+// ⚡ 優化 1：模型清單快取，避免重複發送 GET /models 請求
+async function getCandidateModels(apiKey) {
+    if (cachedCandidateModels && cachedCandidateModels.length > 0) {
+        return cachedCandidateModels;
+    }
+
+    const defaultModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000); // 縮短為 2 秒超時
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (listRes.ok) {
+            const listData = await listRes.json();
+            if (listData.models && Array.isArray(listData.models)) {
+                const fetched = listData.models
+                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
+                    .map(m => m.name.replace(/^models\//, ''));
+                if (fetched.length > 0) {
+                    // 將 Flash / 2.0 排序在最前面
+                    fetched.sort((a, b) => {
+                        const aFlash = a.includes('2.0') || a.includes('flash');
+                        const bFlash = b.includes('2.0') || b.includes('flash');
+                        return (bFlash ? 1 : 0) - (aFlash ? 1 : 0);
+                    });
+                    cachedCandidateModels = fetched;
+                    return cachedCandidateModels;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("無法取得模型列表，使用極速預設清單", e);
+    }
+
+    cachedCandidateModels = defaultModels;
+    return cachedCandidateModels;
+}
+
+// ⚡ 核心 Gemini API 調用邏輯 (極速 + 高精度版)
 async function fetchGeminiAPI(prompt, onProgress) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("請先填寫 Gemini API Key！");
@@ -1440,49 +1479,31 @@ async function fetchGeminiAPI(prompt, onProgress) {
         if (onProgress) onProgress(pct, msg);
     };
 
-    updateProgress(10, "🔍 正在連接 Google AI API 檢查可用模型清單...");
+    updateProgress(15, "🚀 啟動極速 AI 分析引擎...");
 
-    let candidateModels = [];
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: controller.signal });
-        clearTimeout(timeoutId);
+    // 取得模型清單 (快取優化)
+    const candidateModels = await getCandidateModels(apiKey);
+    const targetModels = candidateModels.slice(0, 3);
 
-        if (listRes.ok) {
-            const listData = await listRes.json();
-            if (listData.models && Array.isArray(listData.models)) {
-                candidateModels = listData.models
-                    .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-                    .map(m => m.name.replace(/^models\//, ''));
-            }
-        }
-    } catch (e) {
-        console.warn("無法取得模型列表，使用預設模型", e);
-    }
-
-    if (candidateModels.length === 0) {
-        candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
-    }
-
-    updateProgress(30, `📊 成功檢測到 ${candidateModels.length} 個可用 Gemini 模型`);
-
-    const preferredModels = candidateModels.filter(m => m.includes("flash") || m.includes("2.0") || m.includes("1.5"));
-    const targetModels = preferredModels.length > 0 ? preferredModels.slice(0, 3) : candidateModels.slice(0, 3);
-
-    updateProgress(50, `🚀 啟動 AI 分析器 (${targetModels.join(", ")})...`);
+    updateProgress(40, `⚡ 啟動併發競速推論 (${targetModels.join(", ")})...`);
 
     const callSingleModel = async (model) => {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 超時縮短至 8 秒以利快切
 
         const response = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+                system_instruction: {
+                    parts: [{ text: "你是一位專業的 TOEIC 英文教學專家。請根據要求輸出精確、無誤且結構嚴謹的 JSON 資料。" }]
+                },
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: { 
+                    responseMimeType: "application/json",
+                    temperature: 0.2 // ⚡ 低溫生成：大幅加快採樣推論速度，且提升 JSON 格式穩定度與正確性
+                }
             }),
             signal: controller.signal
         });
@@ -1500,12 +1521,12 @@ async function fetchGeminiAPI(prompt, onProgress) {
     };
 
     try {
-        updateProgress(80, `⚡ 等待模型回應並生成多益測驗與考點...`);
+        updateProgress(75, `⚡ 接收高精度解析資料與題目...`);
         const result = await Promise.any(targetModels.map(m => callSingleModel(m)));
         updateProgress(100, `🎉 分析完成！`);
         return result;
     } catch (err) {
-        updateProgress(60, `⚠️ 快速模型回應超時，啟動備用模型...`);
+        updateProgress(60, `⚠️ 快速模型回應超時，啟動備用降級機制...`);
         for (const model of candidateModels) {
             try {
                 const res = await callSingleModel(model);
@@ -1542,16 +1563,30 @@ async function analyzeWordWithAI(wordInput, onProgress) {
     return { data: resultData, usedModel };
 }
 
-async function lookupWord() {
+async function lookupWord(forceAI = false) {
     const wordInput = document.getElementById("wordInput").value.trim();
     const searchBtn = document.getElementById("searchBtn");
 
     if (!wordInput) return alert("請輸入單字或中文");
 
     const resultDiv = document.getElementById("result");
-    searchBtn.disabled = true;
-
     document.getElementById("resultContainer").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // ⚡ 本地快取秒開機制：如果本地已經有該單字完整資料，且非強制 AI 分析，則瞬間 (0ms) 呈現！
+    if (!forceAI) {
+        const words = getWords();
+        const cleanInput = sanitizeWord(wordInput).toLowerCase();
+        const existingWord = words.find(w => !w.isDeleted && (w.word.toLowerCase() === cleanInput || (w.chinese && w.chinese.includes(wordInput))));
+        
+        if (existingWord && !isWordIncomplete(existingWord)) {
+            currentResultData = existingWord;
+            resultDiv.innerHTML = renderCardHTML(currentResultData, false, "本地快取 (0ms 秒開)") + 
+                `<div style="margin-top:10px; text-align:center;"><button class="secondary btn-sm" onclick="lookupWord(true)">🤖 強制 AI 重新分析此字</button></div>`;
+            return;
+        }
+    }
+
+    searchBtn.disabled = true;
 
     let logs = [];
     const updateUI = (percent, msg, isError = false) => {
@@ -1749,7 +1784,7 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
     const ex3HTML = formatExampleHTML(item.example3_en, item.example3_zh, null, 3);
     const formHTML = renderGrammaticalForm(item.grammaticalForm);
 
-    const modelBadgeHTML = usedModel ? `<div class="model-badge">🤖 本分析結果由模型：<strong>${usedModel}</strong> 生成</div>` : '';
+    const modelBadgeHTML = usedModel ? `<div class="model-badge">🤖 本分析結果由：<strong>${usedModel}</strong> 生成</div>` : '';
 
     return `
         <div class="word-card" id="${cardId}">
@@ -1963,7 +1998,7 @@ async function upgradeOldWords(evt) {
         if (upgradeBtn) upgradeBtn.innerHTML = `⏳ 補齊中 (${i + 1}/${outdatedIndices.length})`;
 
         try {
-            if (i > 0) await new Promise(r => setTimeout(r, 1200));
+            if (i > 0) await new Promise(r => setTimeout(r, 1000));
             const { data } = await analyzeWordWithAI(cleanWord);
             const now = Date.now();
             words[idx] = { 
