@@ -752,7 +752,7 @@ details summary {
 
     <div class="card api-box">
         <details id="settingsDetails">
-            <summary>⚙️ 系統與雲端連線設定 (Gemini & GitHub Gist)</summary>
+            <summary>⚙️ 系統與雲端連線設定 (Gemini & GitHub Gist 分割同步)</summary>
             <div style="margin-top:12px;">
                 <label><strong>🔑 Gemini API Key：</strong></label>
                 <input id="apiKeyInput" type="text" placeholder="貼上您的 Gemini API Key" onchange="saveSettings(false)">
@@ -833,7 +833,7 @@ details summary {
                     <div class="toolbar-card">
                         <div class="toolbar-card-title">☁️ 雲端與備份</div>
                         <div class="toolbar-btn-group">
-                            <button class="success btn-sm" onclick="performFullSync(true)">🔄 同步</button>
+                            <button class="success btn-sm" onclick="performFullSync(true)">🔄 分割同步</button>
                             <button class="warning btn-sm" onclick="pullCloudToLocal(true)">☁️ 蓋本地</button>
                             <button class="danger btn-sm" onclick="clearLocalDatabase()">🗑️ 清空</button>
                         </div>
@@ -1010,110 +1010,80 @@ function mergeDatasets(localList, remoteList) {
     return Array.from(map.values());
 }
 
-async function performFullSync(interactive = false) {
-    const token = getGitHubToken();
-    if (!token) {
-        if (interactive) alert("請填寫 GitHub Personal Access Token！");
-        return;
-    }
+const GIST_LEGACY_FILE = "toeic_vocab_db.json";
+const GIST_MANIFEST_FILE = "toeic_vocab_manifest.json";
+const GIST_PART_PREFIX = "toeic_vocab_part_";
+const GIST_PART_MAX_BYTES = 350 * 1024;
 
-    updateSyncStatusDisplay('syncing');
-
-    let gistId = getGistId();
-    const fileName = "toeic_vocab_db.json";
-    const description = "AI TOEIC 全方位單字學習系統 - 單字資料庫備份";
-    let remoteWords = [];
-
-    try {
-        const timestamp = Date.now();
-
-        if (!gistId) {
-            const listRes = await fetch(`https://api.github.com/gists?per_page=100&t=${timestamp}`, {
-                method: "GET",
-                headers: { "Authorization": `token ${token}` }
-            });
-            if (listRes.ok) {
-                const gists = await listRes.json();
-                const existingGist = gists.find(g => g.files && g.files[fileName]);
-                if (existingGist) {
-                    gistId = existingGist.id;
-                    localStorage.setItem("gist_id", gistId);
-                    const gistInput = document.getElementById("gistIdInput");
-                    if (gistInput) gistInput.value = gistId;
-                }
-            }
-        }
-
-        if (gistId) {
-            const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
-                method: "GET",
-                headers: { "Authorization": `token ${token}` }
-            });
-
-            if (!getRes.ok) throw new Error(`讀取雲端失敗 (HTTP ${getRes.status})`);
-
-            const gistData = await getRes.json();
-            const file = gistData.files[fileName] || Object.values(gistData.files)[0];
-            if (file) {
-                let contentStr = file.content;
-                if (file.truncated && file.raw_url) {
-                    const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
-                    if (!rawRes.ok) throw new Error("抓取完整備份失敗");
-                    contentStr = await rawRes.text();
-                }
-                if (contentStr) remoteWords = safeParseJSON(contentStr);
-            }
-        }
-
-        const cloudCountSpan = document.getElementById("cloudWordCount");
-        if (cloudCountSpan) cloudCountSpan.textContent = remoteWords.filter(w => !w.isDeleted).length;
-
-        const localWords = getWords();
-        const mergedWords = mergeDatasets(localWords, remoteWords);
-
-        saveWords(mergedWords, false);
-
-        const content = JSON.stringify(mergedWords, null, 2);
-        let pushRes;
-
-        if (!gistId) {
-            pushRes = await fetch("https://api.github.com/gists", {
-                method: "POST",
-                headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ description, public: false, files: { [fileName]: { content } } })
-            });
-        } else {
-            pushRes = await fetch(`https://api.github.com/gists/${gistId}`, {
-                method: "PATCH",
-                headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ description, files: { [fileName]: { content } } })
-            });
-        }
-
-        if (!pushRes.ok) throw new Error("GitHub 上傳失敗");
-
-        const pushData = await pushRes.json();
-        if (!gistId) {
-            gistId = pushData.id;
-            localStorage.setItem("gist_id", gistId);
-            const gistInput = document.getElementById("gistIdInput");
-            if (gistInput) gistInput.value = gistId;
-        }
-
-        localStorage.setItem("last_sync_time", Date.now());
-        updateSyncStatusDisplay('success');
-
-        const activeCount = mergedWords.filter(w => !w.isDeleted).length;
-        if (cloudCountSpan) cloudCountSpan.textContent = activeCount;
-
-        if (interactive) alert(`✅ 雙向同步完成！(共 ${activeCount} 個單字)`);
-    } catch (err) {
-        console.error("同步失敗:", err);
-        updateSyncStatusDisplay('error');
-        if (interactive) alert(`❌ 同步失敗：${err.message}`);
-    }
+function ghHeaders(json=false) {
+ const h={"Authorization":`Bearer ${getGitHubToken()}`,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};
+ if(json) h["Content-Type"]="application/json"; return h;
 }
-
+async function ghError(r, action) {
+ let detail=""; try { const b=await r.json(); detail=b.message?`：${b.message}`:""; } catch(_) {}
+ return new Error(`${action}失敗 (HTTP ${r.status})${detail}`);
+}
+function byteLen(v){ return new TextEncoder().encode(v).length; }
+function splitWords(words){
+ const parts=[]; let cur=[];
+ for(const w of (Array.isArray(words)?words:[])){
+  const next=[...cur,w];
+  if(cur.length && byteLen(JSON.stringify(next))>GIST_PART_MAX_BYTES){ parts.push(cur); cur=[w]; }
+  else cur=next;
+ }
+ if(cur.length || !parts.length) parts.push(cur); return parts;
+}
+function buildChunkFiles(words, oldFiles={}){
+ const chunks=splitWords(words), files={}, names=[];
+ chunks.forEach((part,i)=>{ const n=`${GIST_PART_PREFIX}${String(i+1).padStart(3,'0')}.json`; names.push(n); files[n]={content:JSON.stringify(part)}; });
+ const manifest={format:"toeic-vocab-chunked",version:1,updatedAt:Date.now(),totalRecords:words.length,activeRecords:words.filter(w=>!w.isDeleted).length,parts:names};
+ files[GIST_MANIFEST_FILE]={content:JSON.stringify(manifest,null,2)};
+ Object.keys(oldFiles||{}).forEach(n=>{ if((n.startsWith(GIST_PART_PREFIX)&&!names.includes(n))||n===GIST_LEGACY_FILE) files[n]=null; });
+ return {files,manifest};
+}
+async function gistFileText(file,name){
+ if(!file) throw new Error(`找不到雲端檔案：${name}`);
+ if(!file.truncated && typeof file.content==='string') return file.content;
+ if(file.raw_url){
+  try { const r=await fetch(`${file.raw_url}?t=${Date.now()}`,{cache:"no-store"}); if(!r.ok) throw await ghError(r,`下載 ${name}`); return await r.text(); }
+  catch(e){ throw new Error(`舊版檔案「${name}」過大，這台電腦又無法存取 gist.githubusercontent.com。請先在可同步的電腦用此新版同步一次，或先匯出 JSON 再於本機匯入。原始錯誤：${e.message}`); }
+ }
+ throw new Error(`雲端檔案「${name}」內容不完整`);
+}
+async function readGistWords(g){
+ const f=(g&&g.files)||{};
+ if(f[GIST_MANIFEST_FILE]){
+  const m=safeParseJSON(await gistFileText(f[GIST_MANIFEST_FILE],GIST_MANIFEST_FILE));
+  if(!m||!Array.isArray(m.parts)) throw new Error("分割索引格式錯誤");
+  const all=[]; for(const n of m.parts){ const p=safeParseJSON(await gistFileText(f[n],n)); if(!Array.isArray(p)) throw new Error(`${n} 不是 JSON 陣列`); all.push(...p); }
+  return {words:all,mode:"chunked"};
+ }
+ if(f[GIST_LEGACY_FILE]){ const a=safeParseJSON(await gistFileText(f[GIST_LEGACY_FILE],GIST_LEGACY_FILE)); if(!Array.isArray(a)) throw new Error("舊版資料不是 JSON 陣列"); return {words:a,mode:"legacy"}; }
+ return {words:[],mode:"empty"};
+}
+async function findVocabGist(){
+ for(let page=1;page<=5;page++){
+  const r=await fetch(`https://api.github.com/gists?per_page=100&page=${page}&t=${Date.now()}`,{headers:ghHeaders(),cache:"no-store"}); if(!r.ok) throw await ghError(r,"取得 Gist 清單");
+  const a=await r.json(), hit=a.find(g=>g.files&&(g.files[GIST_MANIFEST_FILE]||g.files[GIST_LEGACY_FILE])); if(hit) return hit; if(a.length<100) break;
+ } return null;
+}
+async function getGist(gistId){ const r=await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`,{headers:ghHeaders(),cache:"no-store"}); if(!r.ok) throw await ghError(r,"讀取 Gist"); return await r.json(); }
+async function performFullSync(interactive=false){
+ if(!getGitHubToken()){ if(interactive) alert("請填寫 GitHub Personal Access Token！"); return; }
+ updateSyncStatusDisplay('syncing'); let gistId=getGistId();
+ try{
+  if(!gistId){ const hit=await findVocabGist(); if(hit){ gistId=hit.id; localStorage.setItem("gist_id",gistId); document.getElementById("gistIdInput").value=gistId; } }
+  let gd=null, remote={words:[],mode:"empty"}; if(gistId){ gd=await getGist(gistId); remote=await readGistWords(gd); }
+  const merged=mergeDatasets(getWords(),remote.words); saveWords(merged,false);
+  const built=buildChunkFiles(merged,gd?gd.files:{}), body=JSON.stringify({description:"AI TOEIC 單字系統 - Gist 分割備份",public:false,files:built.files});
+  const r=await fetch(gistId?`https://api.github.com/gists/${gistId}`:"https://api.github.com/gists",{method:gistId?"PATCH":"POST",headers:ghHeaders(true),body});
+  if(!r.ok) throw await ghError(r,"GitHub 分割上傳"); const result=await r.json();
+  if(!gistId){ gistId=result.id; localStorage.setItem("gist_id",gistId); document.getElementById("gistIdInput").value=gistId; }
+  localStorage.setItem("last_sync_time",Date.now()); updateSyncStatusDisplay('success');
+  const count=merged.filter(w=>!w.isDeleted).length; document.getElementById("cloudWordCount").textContent=count;
+  if(interactive) alert(`✅ 分割同步完成！\n共 ${count} 個單字，${built.manifest.parts.length} 個分割檔。${remote.mode==='legacy'?'\n舊版單檔已完成轉換。':''}`);
+ }catch(e){ console.error("同步失敗:",e); updateSyncStatusDisplay('error'); if(interactive) alert(`❌ 同步失敗：${e.message}`); }
+}
 function clearLocalDatabase() {
     const localWords = getWords().filter(w => !w.isDeleted);
     if (localWords.length === 0) return alert("本地單字庫已是空的！");
@@ -1125,73 +1095,19 @@ function clearLocalDatabase() {
     }
 }
 
-async function pullCloudToLocal(interactive = true) {
-    const token = getGitHubToken();
-    let gistId = getGistId();
-
-    if (!token) {
-        if (interactive) alert("請先填寫 GitHub Token！");
-        return;
-    }
-
-    if (interactive && !confirm("確定要將雲端單字庫完整覆蓋至本地嗎？")) return;
-
-    updateSyncStatusDisplay('syncing');
-
-    try {
-        const timestamp = Date.now();
-        const fileName = "toeic_vocab_db.json";
-
-        if (!gistId) {
-            const listRes = await fetch(`https://api.github.com/gists?per_page=100&t=${timestamp}`, {
-                headers: { "Authorization": `token ${token}` }
-            });
-            if (listRes.ok) {
-                const gists = await listRes.json();
-                const existingGist = gists.find(g => g.files && g.files[fileName]);
-                if (existingGist) {
-                    gistId = existingGist.id;
-                    localStorage.setItem("gist_id", gistId);
-                }
-            }
-        }
-
-        if (!gistId) throw new Error("找不到雲端 Gist ID");
-
-        const getRes = await fetch(`https://api.github.com/gists/${gistId}?t=${timestamp}`, {
-            headers: { "Authorization": `token ${token}` }
-        });
-
-        if (!getRes.ok) throw new Error(`無法讀取 Gist (HTTP ${getRes.status})`);
-
-        const gistData = await getRes.json();
-        const file = gistData.files[fileName] || Object.values(gistData.files)[0];
-        if (!file) throw new Error("找不到單字檔案");
-
-        let contentStr = file.content;
-        if (file.truncated && file.raw_url) {
-            const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
-            contentStr = await rawRes.text();
-        }
-
-        const remoteWords = safeParseJSON(contentStr);
-        saveWords(remoteWords, false);
-
-        const activeCount = remoteWords.filter(w => !w.isDeleted).length;
-        const cloudCountSpan = document.getElementById("cloudWordCount");
-        if (cloudCountSpan) cloudCountSpan.textContent = activeCount;
-
-        localStorage.setItem("last_sync_time", Date.now());
-        updateSyncStatusDisplay('success');
-
-        if (interactive) alert(`✅ 下載覆蓋成功 (共 ${activeCount} 個單字)！`);
-    } catch (err) {
-        console.error("下載失敗:", err);
-        updateSyncStatusDisplay('error');
-        if (interactive) alert(`❌ 下載失敗：${err.message}`);
-    }
+async function pullCloudToLocal(interactive=true){
+ if(!getGitHubToken()){ if(interactive) alert("請先填寫 GitHub Token！"); return; }
+ if(interactive&&!confirm("確定要將雲端單字庫完整覆蓋至本地嗎？")) return;
+ updateSyncStatusDisplay('syncing'); let gistId=getGistId();
+ try{
+  if(!gistId){ const hit=await findVocabGist(); if(hit){ gistId=hit.id; localStorage.setItem("gist_id",gistId); document.getElementById("gistIdInput").value=gistId; } }
+  if(!gistId) throw new Error("找不到雲端 Gist ID");
+  const remote=await readGistWords(await getGist(gistId)); saveWords(remote.words,false);
+  const count=remote.words.filter(w=>!w.isDeleted).length; document.getElementById("cloudWordCount").textContent=count;
+  localStorage.setItem("last_sync_time",Date.now()); updateSyncStatusDisplay('success');
+  if(interactive) alert(`✅ 下載完成！\n共 ${count} 個單字，格式：${remote.mode==='chunked'?'分割式':'舊版單檔'}`);
+ }catch(e){ console.error("下載失敗:",e); updateSyncStatusDisplay('error'); if(interactive) alert(`❌ 下載失敗：${e.message}`); }
 }
-
 function escapeJsStr(str) {
     if (!str || typeof str !== 'string') return '';
     return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
