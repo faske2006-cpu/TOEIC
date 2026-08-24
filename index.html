@@ -459,7 +459,6 @@ details summary {
     line-height: 1.4;
 }
 
-/* 🎨 全面改為單欄條列式，優化閱讀體驗 */
 .detail-content {
     margin-top: 10px;
     padding-top: 10px;
@@ -492,7 +491,6 @@ details summary {
     gap: 4px;
 }
 
-/* 強制改為單欄結構 */
 .info-grid {
     display: flex;
     flex-direction: column;
@@ -853,7 +851,7 @@ details summary {
                     <div class="toolbar-card">
                         <div class="toolbar-card-title">🛠️ 資料管理</div>
                         <div class="toolbar-btn-group">
-                            <button class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 補齊</button>
+                            <button id="upgradeBtn" class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 補齊</button>
                             <button class="secondary btn-sm" onclick="exportData()">💾 匯出</button>
                             <button class="secondary btn-sm" onclick="document.getElementById('fileInput').click()">📥 匯入</button>
                         </div>
@@ -1023,6 +1021,7 @@ async function performFullSync(interactive = false) {
     const fileName = "toeic_vocab_db.json";
     const description = "AI TOEIC 全方位單字學習系統 - 單字資料庫備份";
     let remoteWords = [];
+    let gistData = null;
 
     try {
         const timestamp = Date.now();
@@ -1051,17 +1050,29 @@ async function performFullSync(interactive = false) {
             });
 
             if (!getRes.ok) throw new Error(`讀取雲端失敗 (HTTP ${getRes.status})`);
+            gistData = await getRes.json();
 
-            const gistData = await getRes.json();
-            const file = gistData.files[fileName] || Object.values(gistData.files)[0];
-            if (file) {
-                let contentStr = file.content;
-                if (file.truncated && file.raw_url) {
-                    const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
-                    if (!rawRes.ok) throw new Error("抓取完整備份失敗");
-                    contentStr = await rawRes.text();
+            // 讀取並合併 Gist 中【所有】JSON 檔案內容
+            if (gistData && gistData.files) {
+                for (const [fName, file] of Object.entries(gistData.files)) {
+                    if (!fName.endsWith('.json')) continue;
+                    let contentStr = file.content;
+                    if (file.truncated && file.raw_url) {
+                        const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
+                        if (!rawRes.ok) throw new Error(`抓取完整備份失敗: ${fName}`);
+                        contentStr = await rawRes.text();
+                    }
+                    if (contentStr) {
+                        try {
+                            const parsed = safeParseJSON(contentStr);
+                            if (Array.isArray(parsed)) {
+                                remoteWords = remoteWords.concat(parsed);
+                            }
+                        } catch(e) {
+                            console.warn(`無法解析 ${fName}，略過`);
+                        }
+                    }
                 }
-                if (contentStr) remoteWords = safeParseJSON(contentStr);
             }
         }
 
@@ -1070,23 +1081,34 @@ async function performFullSync(interactive = false) {
 
         const localWords = getWords();
         const mergedWords = mergeDatasets(localWords, remoteWords);
-
         saveWords(mergedWords, false);
 
-        const content = JSON.stringify(mergedWords, null, 2);
-        let pushRes;
+        // 將 JSON 壓縮上傳
+        const content = JSON.stringify(mergedWords);
+        const filesPayload = {};
 
+        // 標記其他碎片檔案為 null 以進行清理
+        if (gistData && gistData.files) {
+            for (const fName of Object.keys(gistData.files)) {
+                if (fName !== fileName) {
+                    filesPayload[fName] = null;
+                }
+            }
+        }
+        filesPayload[fileName] = { content };
+
+        let pushRes;
         if (!gistId) {
             pushRes = await fetch("https://api.github.com/gists", {
                 method: "POST",
                 headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ description, public: false, files: { [fileName]: { content } } })
+                body: JSON.stringify({ description, public: false, files: filesPayload })
             });
         } else {
             pushRes = await fetch(`https://api.github.com/gists/${gistId}`, {
                 method: "PATCH",
                 headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ description, files: { [fileName]: { content } } })
+                body: JSON.stringify({ description, files: filesPayload })
             });
         }
 
@@ -1106,7 +1128,7 @@ async function performFullSync(interactive = false) {
         const activeCount = mergedWords.filter(w => !w.isDeleted).length;
         if (cloudCountSpan) cloudCountSpan.textContent = activeCount;
 
-        if (interactive) alert(`✅ 雙向同步完成！(共 ${activeCount} 個單字)`);
+        if (interactive) alert(`✅ 雙向同步完成並已清理碎片！(共 ${activeCount} 個單字)`);
     } catch (err) {
         console.error("同步失敗:", err);
         updateSyncStatusDisplay('error');
@@ -1165,16 +1187,29 @@ async function pullCloudToLocal(interactive = true) {
         if (!getRes.ok) throw new Error(`無法讀取 Gist (HTTP ${getRes.status})`);
 
         const gistData = await getRes.json();
-        const file = gistData.files[fileName] || Object.values(gistData.files)[0];
-        if (!file) throw new Error("找不到單字檔案");
+        let remoteWords = [];
 
-        let contentStr = file.content;
-        if (file.truncated && file.raw_url) {
-            const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
-            contentStr = await rawRes.text();
+        if (gistData && gistData.files) {
+            for (const [fName, file] of Object.entries(gistData.files)) {
+                if (!fName.endsWith('.json')) continue;
+                let contentStr = file.content;
+                if (file.truncated && file.raw_url) {
+                    const rawRes = await fetch(`${file.raw_url}?t=${timestamp}`);
+                    contentStr = await rawRes.text();
+                }
+                if (contentStr) {
+                    try {
+                        const parsed = safeParseJSON(contentStr);
+                        if (Array.isArray(parsed)) remoteWords = remoteWords.concat(parsed);
+                    } catch(e) {
+                        console.warn(`無法解析 ${fName}`);
+                    }
+                }
+            }
         }
 
-        const remoteWords = safeParseJSON(contentStr);
+        if (remoteWords.length === 0) throw new Error("雲端找不到單字檔案或解析失敗");
+
         saveWords(remoteWords, false);
 
         const activeCount = remoteWords.filter(w => !w.isDeleted).length;
@@ -1184,7 +1219,7 @@ async function pullCloudToLocal(interactive = true) {
         localStorage.setItem("last_sync_time", Date.now());
         updateSyncStatusDisplay('success');
 
-        if (interactive) alert(`✅ 下載覆蓋成功 (共 ${activeCount} 個單字)！`);
+        if (interactive) alert(`✅ 下載合併成功 (共 ${activeCount} 個單字)！`);
     } catch (err) {
         console.error("下載失敗:", err);
         updateSyncStatusDisplay('error');
@@ -1350,6 +1385,53 @@ function safeJSONParseAI(rawText) {
     }
 }
 
+// 統一的 AI 提示詞函數
+function getAIPrompt(word) {
+    return `你是一位專業的 TOEIC 英文教學專家。請深度分析使用者輸入的詞彙："${word}"。
+若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
+回覆嚴格 JSON 格式：
+{
+ "word": "對應英文",
+ "tag": "情境分類標籤 (例如: 人力資源與企業文化、辦公室溝通、商務商談、財務會計、物流供應鏈)",
+ "targetScore": "多益分數與考頻 (如: 650分中階頻考)",
+ "verbTenses": { "base": "原形", "past": "過去式", "pastParticiple": "過去分詞", "presentParticiple": "現在分詞" },
+ "businessContext": "商務職場句型與中文",
+ "listeningDistractors": "聽力易混淆音提示",
+ "mnemonicTip": "諧音/聯想口訣",
+ "ukUsVariation": "英美差異",
+ "grammaticalForm": "詞態文法分析",
+ "rootAnalysis": "字根拆解",
+ "phonetic": "KK音標",
+ "partOfSpeech": "詞性",
+ "chinese": "中文繁體",
+ "toeic": "常考情境",
+ "part7Synonyms": "Part 7 同義替換",
+ "grammarTraps": "文法陷阱",
+ "derivatives": ["衍生字1", "衍生字2"],
+ "collocations": ["搭配詞1", "搭配詞2"],
+ "prepCollocations": ["核心介系詞搭配1 (如: apply for + N)", "核心介系詞搭配2"],
+ "businessEmailContext": "實用 Email/廣告情境句 (Part 6/7)",
+ "pronunciationTip": "重音與美式連音提示 (如: 重音在第二音節)",
+ "confusableMatrix": [
+    {"word": "易混淆字1", "diff": "一語點破差異/詞性不同"},
+    {"word": "易混淆字2", "diff": "差異點"}
+ ],
+ "part5Quiz": {
+    "question": "包含底線 ____ 的 Part 5 多益文法/詞彙選擇題",
+    "options": ["(A) 選項1", "(B) 選項2", "(C) 選項3", "(D) 選項4"],
+    "answer": "正確選項字號 (例如: (A))",
+    "explain": "題目解析與翻譯"
+ },
+ "synonyms": ["同義字1"],
+ "antonyms": ["反義字1"],
+ "confusables": ["易混淆字"],
+ "example1_en": "例句1", "example1_zh": "翻譯1",
+ "example2_en": "例句2", "example2_zh": "翻譯2",
+ "example3_en": "例句3", "example3_zh": "翻譯3"
+}`;
+}
+
+// 核心 Gemini API 調用邏輯
 async function fetchGeminiAPI(prompt, onProgress) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("請先填寫 Gemini API Key！");
@@ -1376,19 +1458,19 @@ async function fetchGeminiAPI(prompt, onProgress) {
             }
         }
     } catch (e) {
-        console.warn("無法取得模型列表，使用預設高速模型", e);
+        console.warn("無法取得模型列表，使用預設模型", e);
     }
 
     if (candidateModels.length === 0) {
         candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
     }
 
-    updateProgress(30, `📊 成功檢測到 ${candidateModels.length} 個可用 Gemini 模型：<br><small style="color:#787571;">(${candidateModels.join(", ")})</small>`);
+    updateProgress(30, `📊 成功檢測到 ${candidateModels.length} 個可用 Gemini 模型`);
 
     const preferredModels = candidateModels.filter(m => m.includes("flash") || m.includes("2.0") || m.includes("1.5"));
     const targetModels = preferredModels.length > 0 ? preferredModels.slice(0, 3) : candidateModels.slice(0, 3);
 
-    updateProgress(50, `🚀 啟動模型極速分析器 (${targetModels.join(", ")})...`);
+    updateProgress(50, `🚀 啟動 AI 分析器 (${targetModels.join(", ")})...`);
 
     const callSingleModel = async (model) => {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -1437,6 +1519,29 @@ async function fetchGeminiAPI(prompt, onProgress) {
     }
 }
 
+// 統一單字 AI 分析流程
+async function analyzeWordWithAI(wordInput, onProgress) {
+    const cleanInput = wordInput.trim();
+    if (!cleanInput) throw new Error("請輸入單字或中文");
+
+    const prompt = getAIPrompt(cleanInput);
+    const { data, usedModel } = await fetchGeminiAPI(prompt, onProgress);
+
+    if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        throw new Error("AI 回傳結構異常");
+    }
+
+    const rawText = data.candidates[0].content.parts[0].text;
+    const resultData = safeJSONParseAI(rawText);
+
+    if (!resultData || !resultData.word) {
+        throw new Error("AI 解析 JSON 失敗或未能提取有效單字資料");
+    }
+
+    resultData.word = sanitizeWord(resultData.word);
+    return { data: resultData, usedModel };
+}
+
 async function lookupWord() {
     const wordInput = document.getElementById("wordInput").value.trim();
     const searchBtn = document.getElementById("searchBtn");
@@ -1469,60 +1574,9 @@ async function lookupWord() {
 
     updateUI(0, `開始分析："${wordInput}"`);
 
-    const prompt = `你是一位專業的 TOEIC 英文教學專家。請深度分析使用者輸入的詞彙："${wordInput}"。
-若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
-回覆嚴格 JSON 格式：
-{
- "word": "對應英文",
- "tag": "情境分類標籤 (例如: 人力資源與企業文化、辦公室溝通、商務商談、財務會計、物流供應鏈)",
- "targetScore": "多益分數與考頻 (如: 650分中階頻考)",
- "verbTenses": { "base": "原形", "past": "過去式", "pastParticiple": "過去分詞", "presentParticiple": "現在分詞" },
- "businessContext": "商務職場句型與中文",
- "listeningDistractors": "聽力易混淆音提示",
- "mnemonicTip": "諧音/聯想口訣",
- "ukUsVariation": "英美差異",
- "grammaticalForm": "詞態文法分析",
- "rootAnalysis": "字根拆解",
- "phonetic": "KK音標",
- "partOfSpeech": "詞性",
- "chinese": "中文繁體",
- "toeic": "常考情境",
- "part7Synonyms": "Part 7 同義替換",
- "grammarTraps": "文法陷阱",
- "derivatives": ["衍生字1", "衍生字2"],
- "collocations": ["搭配詞1", "搭配詞2"],
- "prepCollocations": ["核心介系詞搭配1 (如: apply for + N)", "核心介系詞搭配2"],
- "businessEmailContext": "實用 Email/廣告情境句 (Part 6/7)",
- "pronunciationTip": "重音與美式連音提示 (如: 重音在第二音節)",
- "confusableMatrix": [
-    {"word": "易混淆字1", "diff": "一語點破差異/詞性不同"},
-    {"word": "易混淆字2", "diff": "差異點"}
- ],
- "part5Quiz": {
-    "question": "包含底線 ____ 的 Part 5 多益文法/詞彙選擇題",
-    "options": ["(A) 選項1", "(B) 選項2", "(C) 選項3", "(D) 選項4"],
-    "answer": "正確選項字號 (例如: (A))",
-    "explain": "題目解析與翻譯"
- },
- "synonyms": ["同義字1"],
- "antonyms": ["反義字1"],
- "confusables": ["易混淆字"],
- "example1_en": "例句1", "example1_zh": "翻譯1",
- "example2_en": "例句2", "example2_zh": "翻譯2",
- "example3_en": "例句3", "example3_zh": "翻譯3"
-}`;
-
     try {
-        const { data, usedModel } = await fetchGeminiAPI(prompt, (pct, msg) => updateUI(pct, msg));
-        
-        updateUI(95, "🧩 解析 JSON 與生成視覺卡片...");
-        const rawText = data.candidates[0].content.parts[0].text;
-        currentResultData = safeJSONParseAI(rawText);
-        
-        if (currentResultData && currentResultData.word) {
-            currentResultData.word = sanitizeWord(currentResultData.word);
-        }
-
+        const { data, usedModel } = await analyzeWordWithAI(wordInput, (pct, msg) => updateUI(pct, msg));
+        currentResultData = data;
         resultDiv.innerHTML = renderCardHTML(currentResultData, true, usedModel);
     } catch (error) {
         resultDiv.innerHTML = `<div style="color:var(--color-danger); padding:10px; background:#fcf2f2; border:1px solid #ebd0d0; border-radius:var(--radius-sm);">❌ 查詢失敗：<br>${error.message}</div>`;
@@ -1840,32 +1894,32 @@ function clearSearchFilter() {
     renderWordList();
 }
 
+// 採用與輸入單字完全一致的 AI 分析流程進行單字重整
 async function updateSingleWord(index, btnEvt) {
     const words = getWords();
     const item = words[index];
     if (!item) return;
 
     const cleanWord = sanitizeWord(item.word);
-    if (!confirm(`確定重新分析「${cleanWord}」並產生多益測驗嗎？`)) return;
+    if (!confirm(`確定重新分析「${cleanWord}」並產生最新多益考點與題目嗎？`)) return;
 
     const btn = btnEvt ? btnEvt.target : null;
     let oldBtnText = "";
-    if (btn) { oldBtnText = btn.innerHTML; btn.disabled = true; btn.innerHTML = "⏳..."; }
+    if (btn) { oldBtnText = btn.innerHTML; btn.disabled = true; btn.innerHTML = "⏳ 分析中..."; }
 
     try {
-        const prompt = `深度分析 TOEIC 單字："${cleanWord}"，回覆 JSON 並包含 Part 5 題目與考點。`;
-        const { data } = await fetchGeminiAPI(prompt);
-        const rawText = data.candidates[0].content.parts[0].text;
-        const newInfo = safeJSONParseAI(rawText);
-
-        if (newInfo && newInfo.word) newInfo.word = sanitizeWord(newInfo.word);
-
+        const { data } = await analyzeWordWithAI(cleanWord);
         const now = Date.now();
-        words[index] = { ...item, ...newInfo, createdAt: item.createdAt || now, updatedAt: now };
+        words[index] = { 
+            ...item, 
+            ...data, 
+            createdAt: item.createdAt || now, 
+            updatedAt: now 
+        };
         saveWords(words);
-        alert(`✅ 已更新「${cleanWord}」！`);
+        alert(`✅ 已成功重整並更新「${cleanWord}」的完整資料！`);
     } catch (err) {
-        alert(`❌ 更新失敗：${err.message}`);
+        alert(`❌ 重整失敗：${err.message}`);
     } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = oldBtnText; }
     }
@@ -1886,6 +1940,7 @@ function isWordIncomplete(item) {
     );
 }
 
+// 採用與輸入單字完全一致的 AI 分析流程進行舊單字批量升級補齊
 async function upgradeOldWords(evt) {
     const words = getWords();
     const outdatedIndices = [];
@@ -1894,10 +1949,10 @@ async function upgradeOldWords(evt) {
     });
 
     if (outdatedIndices.length === 0) return alert("🎉 所有單字皆已有完整多益題與高級考點！");
-    if (!confirm(`找到 ${outdatedIndices.length} 個待補齊單字，開始升級補齊？`)) return;
+    if (!confirm(`找到 ${outdatedIndices.length} 個待補齊單字，開始以統一 AI 模型流程進行升級補齊？`)) return;
 
     let successCount = 0;
-    const upgradeBtn = evt ? evt.currentTarget : null;
+    const upgradeBtn = document.getElementById("upgradeBtn");
     if (upgradeBtn) upgradeBtn.disabled = true;
 
     for (let i = 0; i < outdatedIndices.length; i++) {
@@ -1905,29 +1960,28 @@ async function upgradeOldWords(evt) {
         const item = words[idx];
         const cleanWord = sanitizeWord(item.word);
 
-        if (upgradeBtn) upgradeBtn.innerHTML = `⏳ (${i + 1}/${outdatedIndices.length})`;
+        if (upgradeBtn) upgradeBtn.innerHTML = `⏳ 補齊中 (${i + 1}/${outdatedIndices.length})`;
 
         try {
-            if (i > 0) await new Promise(r => setTimeout(r, 1500));
-            const prompt = `深度分析 TOEIC 單字："${cleanWord}"，回覆 JSON 包含最新多益測驗與考點。`;
-            const { data } = await fetchGeminiAPI(prompt);
-            const rawText = data.candidates[0].content.parts[0].text;
-            const newInfo = safeJSONParseAI(rawText);
-
-            if (newInfo && newInfo.word) newInfo.word = sanitizeWord(newInfo.word);
-
+            if (i > 0) await new Promise(r => setTimeout(r, 1200));
+            const { data } = await analyzeWordWithAI(cleanWord);
             const now = Date.now();
-            words[idx] = { ...item, ...newInfo, createdAt: item.createdAt || now, updatedAt: now };
+            words[idx] = { 
+                ...item, 
+                ...data, 
+                createdAt: item.createdAt || now, 
+                updatedAt: now 
+            };
             successCount++;
             saveWords(words, false);
         } catch (err) {
-            console.error(err);
+            console.error(`補齊 「${cleanWord}」 失敗:`, err);
         }
     }
 
     if (upgradeBtn) { upgradeBtn.disabled = false; upgradeBtn.innerHTML = "⚡ 補齊"; }
     await performFullSync(false);
-    alert(`🎉 補全作業完成！成功 ${successCount} 個。`);
+    alert(`🎉 補全作業完成！成功補齊 ${successCount} / ${outdatedIndices.length} 個單字。`);
 }
 
 function renderWordList() {
