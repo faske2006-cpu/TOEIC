@@ -33,6 +33,11 @@
     --shadow-sticky: 0 8px 20px rgba(60, 50, 40, 0.08);
 }
 
+html {
+    scroll-behavior: smooth;
+    overscroll-behavior-y: none;
+}
+
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
@@ -51,6 +56,7 @@ body {
     word-break: break-word;
     overflow-wrap: break-word;
     line-height: 1.5;
+    -webkit-overflow-scrolling: touch;
 }
 
 .container {
@@ -86,7 +92,8 @@ h2 {
 }
 
 #resultContainer {
-    scroll-margin-top: 120px;
+    scroll-margin-top: 100px;
+    min-height: 120px;
 }
 
 /* 📱 手機優化：固定搜尋列 */
@@ -209,7 +216,7 @@ button:disabled {
 
 .control-panel {
     background: #f8f6f1;
-    border: 1px solid var(--border-color);
+    border: 2px solid #a29b92;
     border-radius: var(--radius-md);
     padding: 12px;
     margin-bottom: 14px;
@@ -336,14 +343,16 @@ button:disabled {
 .stat-badge.mastered { background: #e2ede5; color: #326042; }
 .stat-badge.learning { background: #f7ede0; color: #8a5720; }
 
+/* 莫蘭迪深暖灰加粗外框 */
 .word-card {
-    border: 1px solid var(--border-color);
+    border: 2px solid #a29b92;
     padding: 14px;
     margin-top: 10px;
     border-radius: var(--radius-md);
     background: #fdfcf9;
     width: 100%;
     box-sizing: border-box;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .word-card-top {
@@ -586,6 +595,7 @@ details summary {
     border-radius: var(--radius-sm);
     font-size: 0.85rem;
     line-height: 1.5;
+    min-height: 120px;
 }
 
 .status-log-box .log-item {
@@ -871,7 +881,7 @@ const SRS_INTERVALS = [0, 1, 3, 7, 14, 30];
 
 let filterDueOnly = false;
 let currentResultData = null;
-let cachedCandidateModels = null; // ⚡ 模型清單快取，避免每次查詢都發送 GET /models 網路請求
+let cachedCandidateModels = null;
 
 function getApiKey() {
     return localStorage.getItem("gemini_api_key") || DEFAULT_API_KEY;
@@ -883,6 +893,22 @@ function getGitHubToken() {
 
 function getGistId() {
     return localStorage.getItem("gist_id") || "";
+}
+
+function scrollToResult() {
+    const container = document.getElementById("resultContainer");
+    if (!container) return;
+    
+    const stickyHeader = document.querySelector('.sticky-search');
+    const stickyHeight = stickyHeader ? stickyHeader.offsetHeight : 80;
+    const rect = container.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const targetY = rect.top + scrollTop - stickyHeight - 12;
+
+    window.scrollTo({
+        top: Math.max(0, targetY),
+        behavior: "smooth"
+    });
 }
 
 function updateSyncStatusDisplay(type = 'normal') {
@@ -1053,7 +1079,6 @@ async function performFullSync(interactive = false) {
             if (!getRes.ok) throw new Error(`讀取雲端失敗 (HTTP ${getRes.status})`);
             gistData = await getRes.json();
 
-            // 讀取並合併 Gist 中【所有】JSON 檔案內容
             if (gistData && gistData.files) {
                 for (const [fName, file] of Object.entries(gistData.files)) {
                     if (!fName.endsWith('.json')) continue;
@@ -1084,11 +1109,9 @@ async function performFullSync(interactive = false) {
         const mergedWords = mergeDatasets(localWords, remoteWords);
         saveWords(mergedWords, false);
 
-        // 將 JSON 壓縮上傳
         const content = JSON.stringify(mergedWords);
         const filesPayload = {};
 
-        // 標記其他碎片檔案為 null 以進行清理
         if (gistData && gistData.files) {
             for (const fName of Object.keys(gistData.files)) {
                 if (fName !== fileName) {
@@ -1386,7 +1409,6 @@ function safeJSONParseAI(rawText) {
     }
 }
 
-// 統一的 AI 提示詞函數
 function getAIPrompt(word) {
     return `深度分析使用者輸入的詞彙："${word}"。若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
 回覆嚴格 JSON 格式：
@@ -1431,7 +1453,6 @@ function getAIPrompt(word) {
 }`;
 }
 
-// ⚡ 優化 1：模型清單快取，避免重複發送 GET /models 請求
 async function getCandidateModels(apiKey) {
     if (cachedCandidateModels && cachedCandidateModels.length > 0) {
         return cachedCandidateModels;
@@ -1440,7 +1461,7 @@ async function getCandidateModels(apiKey) {
     const defaultModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); // 縮短為 2 秒超時
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, { signal: controller.signal });
         clearTimeout(timeoutId);
 
@@ -1451,7 +1472,6 @@ async function getCandidateModels(apiKey) {
                     .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
                     .map(m => m.name.replace(/^models\//, ''));
                 if (fetched.length > 0) {
-                    // 將 Flash / 2.0 排序在最前面
                     fetched.sort((a, b) => {
                         const aFlash = a.includes('2.0') || a.includes('flash');
                         const bFlash = b.includes('2.0') || b.includes('flash');
@@ -1463,14 +1483,13 @@ async function getCandidateModels(apiKey) {
             }
         }
     } catch (e) {
-        console.warn("無法取得模型列表，使用極速預設清單", e);
+        console.warn("無法取得模型列表，使用預設清單", e);
     }
 
     cachedCandidateModels = defaultModels;
     return cachedCandidateModels;
 }
 
-// ⚡ 核心 Gemini API 調用邏輯 (極速 + 高精度版)
 async function fetchGeminiAPI(prompt, onProgress) {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("請先填寫 Gemini API Key！");
@@ -1481,7 +1500,6 @@ async function fetchGeminiAPI(prompt, onProgress) {
 
     updateProgress(15, "🚀 啟動極速 AI 分析引擎...");
 
-    // 取得模型清單 (快取優化)
     const candidateModels = await getCandidateModels(apiKey);
     const targetModels = candidateModels.slice(0, 3);
 
@@ -1490,7 +1508,7 @@ async function fetchGeminiAPI(prompt, onProgress) {
     const callSingleModel = async (model) => {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 超時縮短至 8 秒以利快切
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         const response = await fetch(endpoint, {
             method: "POST",
@@ -1502,7 +1520,7 @@ async function fetchGeminiAPI(prompt, onProgress) {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { 
                     responseMimeType: "application/json",
-                    temperature: 0.2 // ⚡ 低溫生成：大幅加快採樣推論速度，且提升 JSON 格式穩定度與正確性
+                    temperature: 0.2
                 }
             }),
             signal: controller.signal
@@ -1540,7 +1558,6 @@ async function fetchGeminiAPI(prompt, onProgress) {
     }
 }
 
-// 統一單字 AI 分析流程
 async function analyzeWordWithAI(wordInput, onProgress) {
     const cleanInput = wordInput.trim();
     if (!cleanInput) throw new Error("請輸入單字或中文");
@@ -1570,9 +1587,8 @@ async function lookupWord(forceAI = false) {
     if (!wordInput) return alert("請輸入單字或中文");
 
     const resultDiv = document.getElementById("result");
-    document.getElementById("resultContainer").scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToResult();
 
-    // ⚡ 本地快取秒開機制：如果本地已經有該單字完整資料，且非強制 AI 分析，則瞬間 (0ms) 呈現！
     if (!forceAI) {
         const words = getWords();
         const cleanInput = sanitizeWord(wordInput).toLowerCase();
@@ -1593,7 +1609,7 @@ async function lookupWord(forceAI = false) {
         logs.push({ msg, isError });
         resultDiv.innerHTML = `
             <div class="status-log-box">
-                <div style="font-weight:600; margin-bottom:6px; color:var(--color-primary); display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight:600; margin-bottom:6px; color:var(--color-primary); display:flex; justify-between; align-items:center;">
                     <span>🔄 AI 深度分析與生成多益題目中...</span>
                     <span><strong>${percent}%</strong></span>
                 </div>
@@ -1893,7 +1909,7 @@ function markMastery(realIndex, isRemembered) {
     const now = Date.now();
     const nextDate = isRemembered ? (now + intervalDays * 24 * 60 * 60 * 1000) : now;
 
-    words[realIndex] = { ...item, mastery: currentLevel, nextReviewDate: nextDate, lastReviewedAt: now, updatedAt: now };
+    words[realIndex] = { ...item, mastery: currentLevel, nextReviewDate: nextDate, lastReviewedAt: now };
     saveWords(words);
 }
 
@@ -1929,7 +1945,6 @@ function clearSearchFilter() {
     renderWordList();
 }
 
-// 採用與輸入單字完全一致的 AI 分析流程進行單字重整
 async function updateSingleWord(index, btnEvt) {
     const words = getWords();
     const item = words[index];
@@ -1949,7 +1964,7 @@ async function updateSingleWord(index, btnEvt) {
             ...item, 
             ...data, 
             createdAt: item.createdAt || now, 
-            updatedAt: now 
+            updatedAt: item.updatedAt !== undefined ? item.updatedAt : (item.createdAt || now) 
         };
         saveWords(words);
         alert(`✅ 已成功重整並更新「${cleanWord}」的完整資料！`);
@@ -1975,7 +1990,6 @@ function isWordIncomplete(item) {
     );
 }
 
-// 採用與輸入單字完全一致的 AI 分析流程進行舊單字批量升級補齊
 async function upgradeOldWords(evt) {
     const words = getWords();
     const outdatedIndices = [];
@@ -2005,7 +2019,7 @@ async function upgradeOldWords(evt) {
                 ...item, 
                 ...data, 
                 createdAt: item.createdAt || now, 
-                updatedAt: now 
+                updatedAt: item.updatedAt !== undefined ? item.updatedAt : (item.createdAt || now) 
             };
             successCount++;
             saveWords(words, false);
@@ -2121,15 +2135,16 @@ function renderWordList() {
         return `
             <div class="word-card" id="${cardId}">
                 <div class="word-card-top">
-                    <div style="font-size:0.78rem; color:var(--text-muted); display:flex; justify-between; align-items:center; gap:8px;">
+                    <div style="font-size:0.78rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; gap:8px;">
                         <span>📅 ${timeString}</span>
                         <span>Level ${level}</span>
                     </div>
+                    <!-- 依需求調整後的按鈕順序：女聲 ➔ 男聲 ➔ 記得 ➔ 忘記 ➔ 重整 ➔ 刪除 -->
                     <div class="word-actions">
+                        <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
+                        <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
                         <button class="success btn-sm" onclick="markMastery(${realIndex}, true)">✅ 記得</button>
                         <button class="danger btn-sm" onclick="markMastery(${realIndex}, false)">❌ 忘記</button>
-                        <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 發音</button>
-                        <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 發音</button>
                         <button class="primary btn-sm" onclick="updateSingleWord(${realIndex}, event)">✨ 重整</button>
                         <button class="danger btn-sm" onclick="deleteWord(${realIndex})">🗑️ 刪除</button>
                     </div>
