@@ -452,6 +452,48 @@ button:disabled {
     border-radius: 3px;
 }
 
+/* 詞性獨立翻譯樣式 */
+.pos-trans-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(92, 112, 128, 0.08);
+    border: 1px solid var(--border-color);
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin: 2px;
+    font-size: 0.85rem;
+}
+
+.pos-chip-tag {
+    color: var(--color-danger);
+    font-weight: 700;
+    font-style: italic;
+    font-size: 0.82rem;
+}
+
+.pos-trans-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.pos-trans-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.pos-trans-val {
+    color: var(--text-main);
+    font-weight: 500;
+}
+
 details {
     width: 100%;
 }
@@ -1400,6 +1442,43 @@ function safeJSONParseAI(rawText) {
     }
 }
 
+function renderChineseHTML(item, isCompact = true) {
+    if (!item) return '';
+    
+    let posMap = item.posTranslations;
+    
+    // 若缺乏 posTranslations，自動解析傳統 chinese 字串或物件
+    if (!posMap || typeof posMap !== 'object' || Object.keys(posMap).length === 0) {
+        if (typeof item.chinese === 'object' && item.chinese !== null) {
+            posMap = item.chinese;
+        } else if (typeof item.chinese === 'string') {
+            const str = item.chinese.trim();
+            // 嘗試正則解析如 "n. 建議 ; v. 提議" 或 "【名詞】建議"
+            const regex = /(?:([a-zA-Z]+\.|\【.*?\】|名詞|動詞|形容詞|副詞|介系詞|連接詞)[:：\s]*)([^;；|/]+)/gi;
+            let match;
+            const parsed = {};
+            while ((match = regex.exec(str)) !== null) {
+                parsed[match[1].trim()] = match[2].trim();
+            }
+            if (Object.keys(parsed).length > 0) {
+                posMap = parsed;
+            }
+        }
+    }
+
+    if (posMap && typeof posMap === 'object' && Object.keys(posMap).length > 0) {
+        const entries = Object.entries(posMap);
+        if (isCompact) {
+            return entries.map(([pos, trans]) => `<span class="pos-trans-chip"><b class="pos-chip-tag">${pos}</b> ${trans}</span>`).join(' ');
+        } else {
+            return `<div class="pos-trans-block">${entries.map(([pos, trans]) => `<div class="pos-trans-row"><span class="pos-chip-tag">${pos}</span><span class="pos-trans-val">${trans}</span></div>`).join('')}</div>`;
+        }
+    }
+
+    const fallbackStr = (typeof item.chinese === 'string') ? item.chinese : JSON.stringify(item.chinese || '');
+    return `<span>${fallbackStr}</span>`;
+}
+
 function getAIPrompt(word) {
     return `深度分析使用者輸入的詞彙："${word}"。若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
 回覆嚴格 JSON 格式：
@@ -1416,7 +1495,11 @@ function getAIPrompt(word) {
  "rootAnalysis": "字根拆解",
  "phonetic": "KK音標",
  "partOfSpeech": "詞性 (如 n., v., adj., adv., prep., conj.)",
- "chinese": "中文繁體",
+ "chinese": "中文繁體總覽翻譯",
+ "posTranslations": {
+    "n.": "當名詞時的中文翻譯 (若無名詞用法則免填此 key)",
+    "v.": "當動詞時的中文翻譯 (若無動詞用法則免填此 key)"
+ },
  "toeic": "常考情境",
  "part7Synonyms": "Part 7 同義替換",
  "grammarTraps": "文法陷阱",
@@ -1442,8 +1525,9 @@ function getAIPrompt(word) {
  "example2_en": "例句2", "example2_zh": "翻譯2",
  "example3_en": "例句3", "example3_zh": "翻譯3"
 }
-【重要動詞規範】
-1. "verbTenses" 欄位規則：僅當該單字包含動詞 (Verb) 詞性時才填寫內容；若該單字純屬名詞、形容詞、副詞、介系詞等無動詞用法者，請務必將 "verbTenses" 設為 null！嚴禁填寫 N/A、無、或硬湊三態。`;
+【重要規範】
+1. "posTranslations" 規範：務必依據單字具備的個別詞性 (如 "n.", "v.", "adj.") 拆開填寫對應中文，切勿混在一塊！
+2. "verbTenses" 欄位規則：僅當該單字包含動詞 (Verb) 詞性時才填寫內容；若該單字純屬名詞、形容詞、副詞、介系詞等無動詞用法者，請務必將 "verbTenses" 設為 null！嚴禁填寫 N/A、無、或硬湊三態。`;
 }
 
 async function getCandidateModels(apiKey) {
@@ -1585,7 +1669,10 @@ async function lookupWord(forceAI = false) {
     if (!forceAI) {
         const words = getWords();
         const cleanInput = sanitizeWord(wordInput).toLowerCase();
-        const existingWord = words.find(w => !w.isDeleted && (w.word.toLowerCase() === cleanInput || (w.chinese && w.chinese.includes(wordInput))));
+        const existingWord = words.find(w => !w.isDeleted && (
+            w.word.toLowerCase() === cleanInput || 
+            (w.chinese && (typeof w.chinese === 'string' ? w.chinese.includes(wordInput) : JSON.stringify(w.chinese).includes(wordInput)))
+        ));
         
         if (existingWord && !isWordIncomplete(existingWord)) {
             currentResultData = existingWord;
@@ -1718,7 +1805,6 @@ function renderVerbTensesBox(vt) {
     const hasPastParticiple = isValidValue(vt.pastParticiple);
     const hasPresentParticiple = isValidValue(vt.presentParticiple);
     
-    // 若過去式與分詞皆非有效值，認定非動詞，隱藏整個區塊
     if (!hasPast && !hasPastParticiple && !hasPresentParticiple) return '';
 
     return `
@@ -1816,7 +1902,7 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
                 <span>${displayWord}</span> ${posText} ${phoneticText}
                 <span class="zh-wrapper">
                     <button class="zh-toggle-btn" onclick="toggleZh(this)">👁️</button>
-                    <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:0.95rem;">[${item.chinese}]</span>
+                    <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:0.95rem;">${renderChineseHTML(item, true)}</span>
                 </span>
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; align-items:center;">
@@ -1829,6 +1915,7 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
                     <div class="info-block-title">📌 核心文法與記憶口訣</div>
                     ${verbTensesHTML}
                     <div class="info-grid">
+                        <div class="info-item"><strong>詞性獨立翻譯：</strong>${renderChineseHTML(item, false)}</div>
                         <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
                         <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
                         <div class="info-item"><strong>重音/連音：</strong>${item.pronunciationTip || '-'}</div>
@@ -1990,7 +2077,9 @@ function isWordIncomplete(item) {
         isEmptyStr(item.tag) ||
         isEmptyStr(item.businessEmailContext) ||
         !item.part5Quiz ||
-        isEmptyArr(item.prepCollocations)
+        isEmptyArr(item.prepCollocations) ||
+        !item.posTranslations ||
+        (typeof item.posTranslations === 'object' && Object.keys(item.posTranslations).length === 0)
     );
 }
 
@@ -2065,8 +2154,11 @@ function renderWordList() {
     if (statMastered) statMastered.textContent = masteredWords.length;
 
     let filteredWords = activeWords.filter(item => {
+        const chineseStr = typeof item.chinese === 'string' ? item.chinese : JSON.stringify(item.chinese || '');
+        const posTransStr = item.posTranslations ? JSON.stringify(item.posTranslations) : '';
         const matchesQuery = item.word.toLowerCase().includes(filterText) || 
-                            (item.chinese && item.chinese.toLowerCase().includes(filterText)) ||
+                            chineseStr.toLowerCase().includes(filterText) ||
+                            posTransStr.toLowerCase().includes(filterText) ||
                             (item.tag && item.tag.toLowerCase().includes(filterText));
         if (filterDueOnly) return matchesQuery && (!item.nextReviewDate || item.nextReviewDate <= now);
         return matchesQuery;
@@ -2163,7 +2255,7 @@ function renderWordList() {
                         ${cleanWord} ${posTag} ${phoneticText}
                         <span class="zh-wrapper">
                             <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️</button>
-                            <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:0.92rem;">[${item.chinese}]</span>
+                            <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:0.92rem;">${renderChineseHTML(item, true)}</span>
                         </span>
                         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center;">
                             ${tagBadge}
@@ -2175,6 +2267,7 @@ function renderWordList() {
                             <div class="info-block-title">📌 核心文法與記憶口訣</div>
                             ${verbTensesHTML}
                             <div class="info-grid">
+                                <div class="info-item"><strong>詞性獨立翻譯：</strong>${renderChineseHTML(item, false)}</div>
                                 <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
                                 <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
                                 <div class="info-item"><strong>重音/連音：</strong>${item.pronunciationTip || '-'}</div>
