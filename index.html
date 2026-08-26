@@ -96,7 +96,6 @@ h2 {
     min-height: 120px;
 }
 
-/* 📱 手機優化：固定搜尋列 */
 .sticky-search {
     position: sticky;
     top: max(10px, env(safe-area-inset-top));
@@ -262,7 +261,6 @@ button:disabled {
     background: transparent;
 }
 
-/* 📱 手機優化：工具列網格佈局 */
 .toolbar-section {
     display: flex;
     flex-direction: column;
@@ -343,7 +341,6 @@ button:disabled {
 .stat-badge.mastered { background: #e2ede5; color: #326042; }
 .stat-badge.learning { background: #f7ede0; color: #8a5720; }
 
-/* 莫蘭迪深暖灰加粗外框 */
 .word-card {
     border: 2px solid #a29b92;
     padding: 14px;
@@ -649,7 +646,6 @@ details summary {
     color: var(--text-muted);
 }
 
-/* Part 5 測驗與易混淆矩陣 */
 .quiz-box {
     background: #f7f9fa;
     border: 1px solid #d0dfeb;
@@ -735,7 +731,6 @@ details summary {
     font-weight: 600;
 }
 
-/* 💻 平板與大螢幕適應 */
 @media (min-width: 650px) {
     body { padding: 24px; }
     h1 { font-size: 1.75rem; }
@@ -781,7 +776,6 @@ details summary {
         </details>
     </div>
 
-    <!-- Sticky 搜尋區塊 -->
     <div class="card sticky-search">
         <input id="wordInput" placeholder="輸入英文單字或中文..." onkeydown="handleKeyDown(event)">
         <div class="search-controls-row">
@@ -837,7 +831,6 @@ details summary {
 
             <div class="toolbar-section">
                 <div class="toolbar-grid">
-                    <!-- 雲端與備份 -->
                     <div class="toolbar-card">
                         <div class="toolbar-card-title">☁️ 雲端與備份</div>
                         <div class="toolbar-btn-group">
@@ -847,7 +840,6 @@ details summary {
                         </div>
                     </div>
 
-                    <!-- 檢視與模式 -->
                     <div class="toolbar-card">
                         <div class="toolbar-card-title">👁️ 檢視與模式</div>
                         <div class="toolbar-btn-group">
@@ -857,7 +849,6 @@ details summary {
                         </div>
                     </div>
 
-                    <!-- 資料與工具 -->
                     <div class="toolbar-card">
                         <div class="toolbar-card-title">🛠️ 資料管理</div>
                         <div class="toolbar-btn-group">
@@ -1424,7 +1415,7 @@ function getAIPrompt(word) {
  "grammaticalForm": "詞態文法分析",
  "rootAnalysis": "字根拆解",
  "phonetic": "KK音標",
- "partOfSpeech": "詞性",
+ "partOfSpeech": "詞性 (如 n., v., adj., adv., prep., conj.)",
  "chinese": "中文繁體",
  "toeic": "常考情境",
  "part7Synonyms": "Part 7 同義替換",
@@ -1450,7 +1441,9 @@ function getAIPrompt(word) {
  "example1_en": "例句1", "example1_zh": "翻譯1",
  "example2_en": "例句2", "example2_zh": "翻譯2",
  "example3_en": "例句3", "example3_zh": "翻譯3"
-}`;
+}
+【重要動詞規範】
+1. "verbTenses" 欄位規則：僅當該單字包含動詞 (Verb) 詞性時才填寫內容；若該單字純屬名詞、形容詞、副詞、介系詞等無動詞用法者，請務必將 "verbTenses" 設為 null！嚴禁填寫 N/A、無、或硬湊三態。`;
 }
 
 async function getCandidateModels(apiKey) {
@@ -1713,7 +1706,21 @@ function renderGrammaticalForm(formText) {
 }
 
 function renderVerbTensesBox(vt) {
-    if (!vt || typeof vt !== 'object' || !vt.base || vt.base === 'N/A' || vt.base === '-') return '';
+    if (!vt || typeof vt !== 'object') return '';
+    
+    const isValidValue = (val) => {
+        if (!val || typeof val !== 'string') return false;
+        const clean = val.trim().toLowerCase();
+        return !['', '-', 'n/a', 'null', 'none', '無', '無動詞用法', 'undefined'].includes(clean);
+    };
+
+    const hasPast = isValidValue(vt.past);
+    const hasPastParticiple = isValidValue(vt.pastParticiple);
+    const hasPresentParticiple = isValidValue(vt.presentParticiple);
+    
+    // 若過去式與分詞皆非有效值，認定非動詞，隱藏整個區塊
+    if (!hasPast && !hasPastParticiple && !hasPresentParticiple) return '';
+
     return `
         <div style="background: #fcf8f2; border: 1px solid #eddcca; border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 8px;">
             <div style="font-weight: 600; color: #8a5323; margin-bottom: 4px; font-size: 0.82rem;">🔥 動詞三態：</div>
@@ -1818,7 +1825,6 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
             </div>
             
             <div class="detail-content">
-                <!-- 區塊 1：核心文法與記憶口訣 -->
                 <div class="info-block">
                     <div class="info-block-title">📌 核心文法與記憶口訣</div>
                     ${verbTensesHTML}
@@ -1830,7 +1836,6 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
                     </div>
                 </div>
 
-                <!-- 區塊 2：多益實戰與情境 -->
                 <div class="info-block">
                     <div class="info-block-title">💼 多益考點與職場情境</div>
                     <div class="info-grid">
@@ -1844,7 +1849,6 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
                     </div>
                 </div>
 
-                <!-- 區塊 3：詞彙擴充與對比 -->
                 <div class="info-block">
                     <div class="info-block-title">🌱 詞彙擴充與同反義字</div>
                     <div class="info-grid">
@@ -2139,7 +2143,6 @@ function renderWordList() {
                         <span>📅 ${timeString}</span>
                         <span>Level ${level}</span>
                     </div>
-                    <!-- 依需求調整後的按鈕順序：女聲 ➔ 男聲 ➔ 記得 ➔ 忘記 ➔ 重整 ➔ 刪除 -->
                     <div class="word-actions">
                         <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
                         <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
@@ -2168,7 +2171,6 @@ function renderWordList() {
                         </div>
                     </summary>
                     <div class="detail-content">
-                        <!-- 區塊 1：核心文法與記憶口訣 -->
                         <div class="info-block">
                             <div class="info-block-title">📌 核心文法與記憶口訣</div>
                             ${verbTensesHTML}
@@ -2180,7 +2182,6 @@ function renderWordList() {
                             </div>
                         </div>
 
-                        <!-- 區塊 2：多益實戰與情境 -->
                         <div class="info-block">
                             <div class="info-block-title">💼 多益考點與職場情境</div>
                             <div class="info-grid">
@@ -2194,7 +2195,6 @@ function renderWordList() {
                             </div>
                         </div>
 
-                        <!-- 區塊 3：詞彙擴充與對比 -->
                         <div class="info-block">
                             <div class="info-block-title">🌱 詞彙擴充與同反義字</div>
                             <div class="info-grid">
