@@ -1039,6 +1039,13 @@ function getItemTime(item) {
     return Number(t) || 0;
 }
 
+function getCreatedTime(item) {
+    if (!item) return 0;
+    let t = item.createdAt || item.updatedAt || 0;
+    if (typeof t === 'string') t = Date.parse(t) || 0;
+    return Number(t) || 0;
+}
+
 function mergeDatasets(localList, remoteList) {
     const map = new Map();
 
@@ -1327,8 +1334,15 @@ function toggleAllTranslations() {
 function sanitizeWord(word) {
     if (!word || typeof word !== 'string') return word;
     word = word.trim();
+    if (!word) return '';
+
+    // 全大寫且長度>=2（全大寫縮寫，如 NASA, CEO, FBI, WTO），保持大寫
     if (/^[A-Z0-9\-\.\s]{2,}$/.test(word) && word === word.toUpperCase()) return word;
 
+    // 駝峰寫法/特殊品牌（如 iPhone, eBay, macOS），保持原樣
+    if (/^[a-z]+[A-Z][a-zA-Z0-9]*$/.test(word)) return word;
+
+    // 常見專有名詞清單（如星期、月份、國家等）強制定首字大寫
     const properNouns = [
         "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
         "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
@@ -1338,7 +1352,54 @@ function sanitizeWord(word) {
     if (properNouns.includes(word.toLowerCase())) {
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     }
+
+    // 若首字母大寫且後續小寫，保留 AI 所判斷的特定專有名詞大小寫格式（如 Tesla, Apple 公司名, Turkey 國名）
+    if (/^[A-Z][a-z0-9\-\.]*$/.test(word)) {
+        return word;
+    }
+
+    // 一般普通單字保存時一律使用【全小寫】
     return word.toLowerCase();
+}
+
+function normalizeWordData(data) {
+    if (!data) return data;
+    
+    let posMap = data.posTranslations;
+
+    if (typeof posMap === 'string') {
+        try {
+            posMap = JSON.parse(posMap);
+        } catch (e) {
+            posMap = null;
+        }
+    }
+
+    if (!posMap || typeof posMap !== 'object' || Object.keys(posMap).length === 0) {
+        posMap = {};
+        
+        if (typeof data.chinese === 'string' && data.chinese.trim()) {
+            const str = data.chinese.trim();
+            const regex = /(?:([a-zA-Z]+\.|\【.*?\】|名詞|動詞|形容詞|副詞|介系詞|連接詞)[:：\s]*)([^;；|/]+)/gi;
+            let match;
+            while ((match = regex.exec(str)) !== null) {
+                posMap[match[1].trim()] = match[2].trim();
+            }
+            
+            if (Object.keys(posMap).length === 0) {
+                let posKey = (data.partOfSpeech && data.partOfSpeech.trim()) ? data.partOfSpeech.trim() : 'n.';
+                if (/^[a-zA-Z]+$/.test(posKey)) posKey += '.';
+                posMap[posKey] = str;
+            }
+        } else if (typeof data.chinese === 'object' && data.chinese !== null) {
+            posMap = data.chinese;
+        }
+    }
+
+    return {
+        ...data,
+        posTranslations: Object.keys(posMap).length > 0 ? posMap : data.posTranslations
+    };
 }
 
 function checkAndFixDatabaseWords(words) {
@@ -1354,18 +1415,20 @@ function checkAndFixDatabaseWords(words) {
         if (seen.has(lowerWord)) { fixCount++; continue; }
         seen.add(lowerWord);
 
-        let updated = cleanedWord !== item.word;
+        const normalized = normalizeWordData(item);
+
+        let updated = cleanedWord !== item.word || JSON.stringify(normalized.posTranslations) !== JSON.stringify(item.posTranslations);
         const mastery = typeof item.mastery === 'number' ? item.mastery : 0;
         const nextReviewDate = typeof item.nextReviewDate === 'number' ? item.nextReviewDate : 0;
         const lastReviewedAt = typeof item.lastReviewedAt === 'number' ? item.lastReviewedAt : 0;
-        const createdAt = typeof item.createdAt === 'number' ? item.createdAt : Date.now();
+        const createdAt = typeof item.createdAt === 'number' ? item.createdAt : (typeof item.updatedAt === 'number' ? item.updatedAt : Date.now());
         const updatedAtVal = typeof item.updatedAt === 'number' ? item.updatedAt : createdAt;
         const isDeleted = Boolean(item.isDeleted);
 
         if (updated || item.mastery === undefined || item.updatedAt === undefined) fixCount++;
 
         uniqueWords.push({
-            ...item,
+            ...normalized,
             word: cleanedWord,
             mastery,
             nextReviewDate,
@@ -1445,26 +1508,8 @@ function safeJSONParseAI(rawText) {
 function renderChineseHTML(item, isCompact = true) {
     if (!item) return '';
     
-    let posMap = item.posTranslations;
-    
-    // 若缺乏 posTranslations，自動解析傳統 chinese 字串或物件
-    if (!posMap || typeof posMap !== 'object' || Object.keys(posMap).length === 0) {
-        if (typeof item.chinese === 'object' && item.chinese !== null) {
-            posMap = item.chinese;
-        } else if (typeof item.chinese === 'string') {
-            const str = item.chinese.trim();
-            // 嘗試正則解析如 "n. 建議 ; v. 提議" 或 "【名詞】建議"
-            const regex = /(?:([a-zA-Z]+\.|\【.*?\】|名詞|動詞|形容詞|副詞|介系詞|連接詞)[:：\s]*)([^;；|/]+)/gi;
-            let match;
-            const parsed = {};
-            while ((match = regex.exec(str)) !== null) {
-                parsed[match[1].trim()] = match[2].trim();
-            }
-            if (Object.keys(parsed).length > 0) {
-                posMap = parsed;
-            }
-        }
-    }
+    const norm = normalizeWordData(item);
+    let posMap = norm.posTranslations;
 
     if (posMap && typeof posMap === 'object' && Object.keys(posMap).length > 0) {
         const entries = Object.entries(posMap);
@@ -1476,14 +1521,23 @@ function renderChineseHTML(item, isCompact = true) {
     }
 
     const fallbackStr = (typeof item.chinese === 'string') ? item.chinese : JSON.stringify(item.chinese || '');
-    return `<span>${fallbackStr}</span>`;
+    const fallbackPos = item.partOfSpeech ? `<b class="pos-chip-tag">${item.partOfSpeech}</b> ` : '';
+
+    if (isCompact) {
+        return `<span class="pos-trans-chip">${fallbackPos}${fallbackStr}</span>`;
+    } else {
+        return `<div class="pos-trans-block"><div class="pos-trans-row">${fallbackPos}<span class="pos-trans-val">${fallbackStr}</span></div></div>`;
+    }
 }
 
 function getAIPrompt(word) {
-    return `深度分析使用者輸入的詞彙："${word}"。若為中文請找出對應的核心英文單字並填入 "word"，普通單字請務必使用【全小寫】。
+    return `深度分析使用者輸入的詞彙："${word}"（無論輸入大寫、小寫或混合，請自動辨識並進行全面分析）。
+若為中文請找出對應的核心英文單字並填入 "word"。
+
 回覆嚴格 JSON 格式：
 {
- "word": "對應英文",
+ "word": "正確的英文單字拼寫（規範：普通一般單字保存時請務必使用【全小寫】；特定專有名詞、地名、人名、月份、縮寫或特殊品牌等需大寫者，請顯示正確首字母大寫或全大寫，例如 apple, March, NASA, iPhone）",
+ "caseAnalysis": "大小寫差異與語意分析（詳細說明該詞彙在全小寫與首字大寫/全大寫時是否有語意、詞性、專有名詞或縮寫上的差異。例如：china 瓷器 vs China 中國；march 行軍/進軍 vs March 三月；apple 蘋果 vs Apple 蘋果公司；turkey 火雞 vs Turkey 土耳其。若無大小寫語意或專有名詞差異，請明確標示：'普通單字，無大小寫語意或專有名詞差異'）",
  "tag": "情境分類標籤 (例如: 人力資源與企業文化、辦公室溝通、商務商談、財務會計、物流供應鏈)",
  "targetScore": "多益分數與考頻 (如: 650分中階頻考)",
  "verbTenses": { "base": "原形", "past": "過去式", "pastParticiple": "過去分詞", "presentParticiple": "現在分詞" },
@@ -1527,7 +1581,9 @@ function getAIPrompt(word) {
 }
 【重要規範】
 1. "posTranslations" 規範：務必依據單字具備的個別詞性 (如 "n.", "v.", "adj.") 拆開填寫對應中文，切勿混在一塊！
-2. "verbTenses" 欄位規則：僅當該單字包含動詞 (Verb) 詞性時才填寫內容；若該單字純屬名詞、形容詞、副詞、介系詞等無動詞用法者，請務必將 "verbTenses" 設為 null！嚴禁填寫 N/A、無、或硬湊三態。`;
+2. "verbTenses" 欄位規則：僅當該單字包含動詞 (Verb) 詞性時才填寫內容；若該單字純屬名詞、形容詞、副詞、介系詞等無動詞用法者，請務必將 "verbTenses" 設為 null！嚴禁填寫 N/A、無、或硬湊三態。
+3. "word" 與大小寫規範：不管使用者輸入是大寫還是小寫，均請自動辨識。普通單字保存請輸出【全小寫】（如 apple, strategy）；特定專有名詞/縮寫請輸出【正確大小寫】（如 Japan, Wednesday, NASA, Apple）。
+4. "caseAnalysis" 規範：必須詳盡剖析該字大小寫的不同含義與專有名詞差異，協助學習者理解大小寫背後的語意區別。`;
 }
 
 async function getCandidateModels(apiKey) {
@@ -1654,7 +1710,8 @@ async function analyzeWordWithAI(wordInput, onProgress) {
     }
 
     resultData.word = sanitizeWord(resultData.word);
-    return { data: resultData, usedModel };
+    const normalizedData = normalizeWordData(resultData);
+    return { data: normalizedData, usedModel };
 }
 
 async function lookupWord(forceAI = false) {
@@ -1668,14 +1725,14 @@ async function lookupWord(forceAI = false) {
 
     if (!forceAI) {
         const words = getWords();
-        const cleanInput = sanitizeWord(wordInput).toLowerCase();
+        const cleanInput = wordInput.toLowerCase();
         const existingWord = words.find(w => !w.isDeleted && (
             w.word.toLowerCase() === cleanInput || 
-            (w.chinese && (typeof w.chinese === 'string' ? w.chinese.includes(wordInput) : JSON.stringify(w.chinese).includes(wordInput)))
+            (w.chinese && (typeof w.chinese === 'string' ? w.chinese.toLowerCase().includes(cleanInput) : JSON.stringify(w.chinese).toLowerCase().includes(cleanInput)))
         ));
         
         if (existingWord && !isWordIncomplete(existingWord)) {
-            currentResultData = existingWord;
+            currentResultData = normalizeWordData(existingWord);
             resultDiv.innerHTML = renderCardHTML(currentResultData, false, "本地快取 (0ms 秒開)") + 
                 `<div style="margin-top:10px; text-align:center;"><button class="secondary btn-sm" onclick="lookupWord(true)">🤖 強制 AI 重新分析此字</button></div>`;
             return;
@@ -1689,7 +1746,7 @@ async function lookupWord(forceAI = false) {
         logs.push({ msg, isError });
         resultDiv.innerHTML = `
             <div class="status-log-box">
-                <div style="font-weight:600; margin-bottom:6px; color:var(--color-primary); display:flex; justify-between; align-items:center;">
+                <div style="font-weight:600; margin-bottom:6px; color:var(--color-primary); display:flex; justify-content:space-between; align-items:center;">
                     <span>🔄 AI 深度分析與生成多益題目中...</span>
                     <span><strong>${percent}%</strong></span>
                 </div>
@@ -1871,6 +1928,7 @@ function renderConfusableMatrix(matrix) {
 }
 
 function renderCardHTML(item, isSearchResult = false, usedModel = "") {
+    item = normalizeWordData(item);
     const displayWord = sanitizeWord(item.word);
     const cardId = 'card_' + Math.random().toString(36).substr(2, 9);
 
@@ -1916,6 +1974,7 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
                     ${verbTensesHTML}
                     <div class="info-grid">
                         <div class="info-item"><strong>詞性獨立翻譯：</strong>${renderChineseHTML(item, false)}</div>
+                        <div class="info-item"><strong>大小寫差異分析：</strong><span style="color:#b86b6b; font-weight:600;">${item.caseAnalysis || '普通單字，無大小寫語意差異'}</span></div>
                         <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
                         <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
                         <div class="info-item"><strong>重音/連音：</strong>${item.pronunciationTip || '-'}</div>
@@ -1959,11 +2018,28 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
 
 async function addCurrentToList() {
     if (!currentResultData) return;
+    currentResultData = normalizeWordData(currentResultData);
     currentResultData.word = sanitizeWord(currentResultData.word);
 
     const words = getWords();
     const existingIndex = words.findIndex(w => w.word.toLowerCase() === currentResultData.word.toLowerCase());
     const now = Date.now();
+
+    if (existingIndex !== -1) {
+        if (confirm(`單字「${words[existingIndex].word}」已存在，要覆蓋更新內容嗎？`)) {
+            words[existingIndex] = { 
+                ...words[existingIndex], 
+                ...currentResultData, 
+                createdAt: words[existingIndex].createdAt || words[existingIndex].updatedAt || now,
+                updatedAt: now,
+                isDeleted: false 
+            };
+            saveWords(words);
+            alert(`✅ 已成功覆蓋更新單字內容！`);
+        }
+        return;
+    }
+
     const newWordObj = {
         ...currentResultData,
         mastery: 0,
@@ -1974,33 +2050,24 @@ async function addCurrentToList() {
         isDeleted: false
     };
 
-    if (existingIndex !== -1) {
-        if (confirm(`單字「${words[existingIndex].word}」已存在，要覆蓋更新嗎？`)) {
-            words[existingIndex] = { ...words[existingIndex], ...newWordObj, createdAt: words[existingIndex].createdAt || now, updatedAt: now };
-            saveWords(words);
-            alert(`✅ 已覆蓋更新！`);
-        }
-        return;
-    }
-
     words.unshift(newWordObj);
     saveWords(words);
-    alert("✅ 已成功儲存！");
+    alert("✅ 已成功儲存至單字庫！");
 }
 
-function markMastery(realIndex, isRemembered) {
+function markMasteryByWord(wordStr, isRemembered) {
     const words = getWords();
-    const item = words[realIndex];
-    if (!item) return;
+    const index = words.findIndex(w => w.word.toLowerCase() === wordStr.toLowerCase());
+    if (index === -1) return;
 
-    let currentLevel = item.mastery || 0;
+    let currentLevel = words[index].mastery || 0;
     currentLevel = isRemembered ? Math.min(currentLevel + 1, 5) : 0;
 
     const intervalDays = SRS_INTERVALS[currentLevel];
     const now = Date.now();
     const nextDate = isRemembered ? (now + intervalDays * 24 * 60 * 60 * 1000) : now;
 
-    words[realIndex] = { ...item, mastery: currentLevel, nextReviewDate: nextDate, lastReviewedAt: now };
+    words[index] = { ...words[index], mastery: currentLevel, nextReviewDate: nextDate, lastReviewedAt: now, updatedAt: now };
     saveWords(words);
 }
 
@@ -2036,12 +2103,12 @@ function clearSearchFilter() {
     renderWordList();
 }
 
-async function updateSingleWord(index, btnEvt) {
+async function updateSingleWordByWord(wordStr, btnEvt) {
     const words = getWords();
-    const item = words[index];
-    if (!item) return;
+    const index = words.findIndex(w => w.word.toLowerCase() === wordStr.toLowerCase());
+    if (index === -1) return;
 
-    const cleanWord = sanitizeWord(item.word);
+    const cleanWord = sanitizeWord(wordStr);
     if (!confirm(`確定重新分析「${cleanWord}」並產生最新多益考點與題目嗎？`)) return;
 
     const btn = btnEvt ? btnEvt.target : null;
@@ -2050,12 +2117,14 @@ async function updateSingleWord(index, btnEvt) {
 
     try {
         const { data } = await analyzeWordWithAI(cleanWord);
+        const normalizedData = normalizeWordData(data);
         const now = Date.now();
+        const originalCreatedAt = words[index].createdAt || words[index].updatedAt || now;
         words[index] = { 
-            ...item, 
-            ...data, 
-            createdAt: item.createdAt || now, 
-            updatedAt: item.updatedAt !== undefined ? item.updatedAt : (item.createdAt || now) 
+            ...words[index], 
+            ...normalizedData, 
+            createdAt: originalCreatedAt, 
+            updatedAt: now 
         };
         saveWords(words);
         alert(`✅ 已成功重整並更新「${cleanWord}」的完整資料！`);
@@ -2071,15 +2140,17 @@ function isWordIncomplete(item) {
     const isEmptyStr = (val) => !val || typeof val !== 'string' || val.trim() === '' || val.trim() === '-';
     const isEmptyArr = (val) => !Array.isArray(val) || val.length === 0;
 
+    const norm = normalizeWordData(item);
+
     return (
-        isEmptyStr(item.partOfSpeech) ||
-        isEmptyStr(item.phonetic) ||
-        isEmptyStr(item.tag) ||
-        isEmptyStr(item.businessEmailContext) ||
-        !item.part5Quiz ||
-        isEmptyArr(item.prepCollocations) ||
-        !item.posTranslations ||
-        (typeof item.posTranslations === 'object' && Object.keys(item.posTranslations).length === 0)
+        isEmptyStr(norm.partOfSpeech) ||
+        isEmptyStr(norm.phonetic) ||
+        isEmptyStr(norm.tag) ||
+        isEmptyStr(norm.businessEmailContext) ||
+        !norm.part5Quiz ||
+        isEmptyArr(norm.prepCollocations) ||
+        !norm.posTranslations ||
+        (typeof norm.posTranslations === 'object' && Object.keys(norm.posTranslations).length === 0)
     );
 }
 
@@ -2107,12 +2178,14 @@ async function upgradeOldWords(evt) {
         try {
             if (i > 0) await new Promise(r => setTimeout(r, 1000));
             const { data } = await analyzeWordWithAI(cleanWord);
+            const normalizedData = normalizeWordData(data);
             const now = Date.now();
+            const originalCreatedAt = item.createdAt || item.updatedAt || now;
             words[idx] = { 
                 ...item, 
-                ...data, 
-                createdAt: item.createdAt || now, 
-                updatedAt: item.updatedAt !== undefined ? item.updatedAt : (item.createdAt || now) 
+                ...normalizedData, 
+                createdAt: originalCreatedAt, 
+                updatedAt: now 
             };
             successCount++;
             saveWords(words, false);
@@ -2154,6 +2227,7 @@ function renderWordList() {
     if (statMastered) statMastered.textContent = masteredWords.length;
 
     let filteredWords = activeWords.filter(item => {
+        item = normalizeWordData(item);
         const chineseStr = typeof item.chinese === 'string' ? item.chinese : JSON.stringify(item.chinese || '');
         const posTransStr = item.posTranslations ? JSON.stringify(item.posTranslations) : '';
         const matchesQuery = item.word.toLowerCase().includes(filterText) || 
@@ -2165,7 +2239,7 @@ function renderWordList() {
     });
 
     filteredWords.sort((a, b) => {
-        const timeA = getItemTime(a), timeB = getItemTime(b);
+        const timeA = getCreatedTime(a), timeB = getCreatedTime(b);
         const wordA = a.word.toLowerCase(), wordB = b.word.toLowerCase();
         const dueA = !a.nextReviewDate || a.nextReviewDate <= now;
         const dueB = !b.nextReviewDate || b.nextReviewDate <= now;
@@ -2195,9 +2269,9 @@ function renderWordList() {
     }
 
     wordListDiv.innerHTML = filteredWords.map((item) => {
-        const realIndex = allWords.findIndex(w => w.word.toLowerCase() === item.word.toLowerCase());
+        item = normalizeWordData(item);
         const cleanWord = sanitizeWord(item.word);
-        const displayTime = getItemTime(item);
+        const displayTime = getCreatedTime(item);
         const timeString = displayTime ? new Date(displayTime).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '無紀錄';
 
         const posTag = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
@@ -2238,10 +2312,10 @@ function renderWordList() {
                     <div class="word-actions">
                         <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
                         <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
-                        <button class="success btn-sm" onclick="markMastery(${realIndex}, true)">✅ 記得</button>
-                        <button class="danger btn-sm" onclick="markMastery(${realIndex}, false)">❌ 忘記</button>
-                        <button class="primary btn-sm" onclick="updateSingleWord(${realIndex}, event)">✨ 重整</button>
-                        <button class="danger btn-sm" onclick="deleteWord(${realIndex})">🗑️ 刪除</button>
+                        <button class="success btn-sm" onclick="markMasteryByWord('${safeWord}', true)">✅ 記得</button>
+                        <button class="danger btn-sm" onclick="markMasteryByWord('${safeWord}', false)">❌ 忘記</button>
+                        <button class="primary btn-sm" onclick="updateSingleWordByWord('${safeWord}', event)">✨ 重整</button>
+                        <button class="danger btn-sm" onclick="deleteWordByWord('${safeWord}')">🗑️ 刪除</button>
                     </div>
                 </div>
 
@@ -2268,6 +2342,7 @@ function renderWordList() {
                             ${verbTensesHTML}
                             <div class="info-grid">
                                 <div class="info-item"><strong>詞性獨立翻譯：</strong>${renderChineseHTML(item, false)}</div>
+                                <div class="info-item"><strong>大小寫差異分析：</strong><span style="color:#b86b6b; font-weight:600;">${item.caseAnalysis || '普通單字，無大小寫語意差異'}</span></div>
                                 <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
                                 <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
                                 <div class="info-item"><strong>重音/連音：</strong>${item.pronunciationTip || '-'}</div>
@@ -2314,10 +2389,11 @@ function toggleAllDetails(open) {
     document.querySelectorAll('#wordList details').forEach(detail => detail.open = open);
 }
 
-async function deleteWord(index) {
-    if (confirm("確定刪除這個單字？")) {
+async function deleteWordByWord(wordStr) {
+    if (confirm(`確定刪除單字「${wordStr}」嗎？`)) {
         const words = getWords();
-        if (words[index]) {
+        const index = words.findIndex(w => w.word.toLowerCase() === wordStr.toLowerCase());
+        if (index !== -1) {
             words[index] = { ...words[index], isDeleted: true, updatedAt: Date.now() };
             saveWords(words);
         }
