@@ -381,6 +381,7 @@ button:disabled {
     box-sizing: border-box;
     transition: transform 0.2s, box-shadow 0.2s;
     box-shadow: 0 3px 10px rgba(50, 40, 30, 0.03);
+    scroll-margin-top: 100px;
 }
 
 .word-card-top {
@@ -2050,7 +2051,7 @@ function formatChipsHTML(data, chipClass = 'highlight-chip') {
 function renderCardHTML(item, isSearchResult = false, usedModel = "") {
     item = normalizeWordData(item);
     const displayWord = sanitizeWord(item.word);
-    const cardId = 'card_' + Math.random().toString(36).substr(2, 9);
+    const cardId = 'card_' + encodeURIComponent(displayWord.toLowerCase());
 
     const posText = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
     const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
@@ -2256,6 +2257,8 @@ async function updateSingleWordByWord(wordStr, btnEvt) {
     let oldBtnText = "";
     if (btn) { oldBtnText = btn.innerHTML; btn.disabled = true; btn.innerHTML = "⏳ 分析中..."; }
 
+    const targetCardId = 'word_card_' + encodeURIComponent(cleanWord.toLowerCase());
+
     try {
         const { data } = await analyzeWordWithAI(cleanWord);
         const normalizedData = normalizeWordData(data);
@@ -2268,6 +2271,17 @@ async function updateSingleWordByWord(wordStr, btnEvt) {
             updatedAt: now 
         };
         saveWords(words);
+        
+        // 自動展開該單字並平滑滾動至該單字位置
+        setTimeout(() => {
+            const cardEl = document.getElementById(targetCardId);
+            if (cardEl) {
+                const detailsEl = cardEl.querySelector('details');
+                if (detailsEl) detailsEl.open = true;
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 50);
+
         alert(`✅ 已成功重整並更新「${cleanWord}」的完整資料！`);
     } catch (err) {
         alert(`❌ 重整失敗：${err.message}`);
@@ -2377,6 +2391,15 @@ function importData(event) {
 }
 
 function renderWordList() {
+    // 紀錄目前已展開的卡片 ID，防止繪製時被關閉
+    const openCardIds = new Set();
+    document.querySelectorAll('#wordList .word-card').forEach(card => {
+        const details = card.querySelector('details');
+        if (details && details.open) {
+            openCardIds.add(card.id);
+        }
+    });
+
     let allWords = getWords();
     let activeWords = allWords.filter(item => !item.isDeleted);
 
@@ -2457,7 +2480,7 @@ function renderWordList() {
         const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
         const verbTensesHTML = renderVerbTensesBox(item.verbTenses);
 
-        const cardId = 'list_card_' + Math.random().toString(36).substr(2, 9);
+        const cardId = 'word_card_' + encodeURIComponent(cleanWord.toLowerCase());
         const quizHTML = renderQuizBox(item.part5Quiz, cardId);
         const matrixHTML = renderConfusableMatrix(item.confusableMatrix);
 
@@ -2570,15 +2593,19 @@ function renderWordList() {
                 </details>
             </div>
         `;
-    }).join("");
+    }).join('');
+
+    openCardIds.forEach(id => {
+        const cardEl = document.getElementById(id);
+        if (cardEl) {
+            const detailsEl = cardEl.querySelector('details');
+            if (detailsEl) detailsEl.open = true;
+        }
+    });
 }
 
-// 頁面初次載入時自動渲染單字庫並進行輕量背景同步
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener("DOMContentLoaded", () => {
     renderWordList();
-    if (getGitHubToken()) {
-        performFullSync(false);
-    }
 });
 </script>
 </body>
