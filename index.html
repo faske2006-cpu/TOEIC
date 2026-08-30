@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>AI TOEIC 全方位單字學習與 SRS 複習系統 (旗艦進階版)</title>
+<title>AI TOEIC 全方位單字學習與自訂分類系統 (旗艦進階版)</title>
 
 <style>
 :root {
@@ -14,8 +14,9 @@
     --text-main: #2d2c2a;
     --text-muted: #66635d;
     --text-light: #949089;
-    --border-color: #ded9d0;
-    --border-dashed: #cdc7bc;
+    --border-color: #b8b1a5;        /* 加深莫蘭迪次要邊框色 */
+    --border-dark: #8e877b;         /* 加粗加深莫蘭迪主要外框色 */
+    --border-dashed: #a8a194;
     
     /* 莫蘭迪功能色 */
     --color-primary: #4e5f6d;       /* 靜謐煙藍 */
@@ -45,8 +46,8 @@
     --radius-md: 10px;
     --radius-sm: 6px;
     --radius-pill: 20px;
-    --shadow-soft: 0 4px 16px rgba(50, 40, 30, 0.04);
-    --shadow-sticky: 0 6px 20px rgba(50, 40, 30, 0.08);
+    --shadow-soft: 0 4px 16px rgba(50, 40, 30, 0.05);
+    --shadow-sticky: 0 6px 20px rgba(50, 40, 30, 0.09);
 }
 
 html {
@@ -80,7 +81,6 @@ body {
     margin: auto;
 }
 
-/* 統一標題層級規範 */
 h1 {
     font-size: var(--font-size-h1);
     font-weight: 700;
@@ -99,14 +99,14 @@ h2 {
     color: var(--text-main);
 }
 
-/* 卡片與容器 */
+/* 主外卡片與功能視窗外框加粗加深 */
 .card {
     background: var(--card-bg);
     padding: 16px;
     border-radius: var(--radius-lg);
     margin-bottom: 14px;
     box-shadow: var(--shadow-soft);
-    border: 1px solid var(--border-color);
+    border: 2px solid var(--border-dark);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -120,7 +120,7 @@ h2 {
     top: max(10px, env(safe-area-inset-top));
     z-index: 1000;
     box-shadow: var(--shadow-sticky);
-    border-color: #d5d0c7;
+    border: 2px solid var(--border-dark);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     background: rgba(255, 255, 255, 0.94);
@@ -135,7 +135,7 @@ h2 {
 
 .api-box {
     background: #f7f5f0;
-    border: 1px solid var(--border-color);
+    border: 2px solid var(--border-dark);
     padding: 12px 14px;
     border-radius: var(--radius-md);
     font-size: var(--font-size-body);
@@ -148,12 +148,11 @@ h2 {
     width: 100%;
 }
 
-/* 表單控制元件統一規範 */
 input, select {
     padding: 9px 12px;
     margin-top: 4px;
     margin-bottom: 4px;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     border-radius: var(--radius-md);
     font-size: var(--font-size-body);
     width: 100%;
@@ -179,7 +178,6 @@ select {
     padding-right: 36px;
 }
 
-/* 按鈕樣式規範 */
 button {
     padding: 9px 14px;
     border: none;
@@ -236,10 +234,9 @@ button:disabled {
 .voice-female { background: var(--color-voice-female); color: white; }
 .voice-male { background: var(--color-voice-male); color: white; }
 
-/* 控制面板與工具列 */
 .control-panel {
     background: #f8f6f1;
-    border: 1px solid #c8c2b7;
+    border: 2px solid var(--border-dark);
     border-radius: var(--radius-md);
     padding: 12px;
     margin-bottom: 14px;
@@ -301,7 +298,7 @@ button:disabled {
 
 .toolbar-card {
     background: #f2efe9;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-dark);
     padding: 10px;
     border-radius: var(--radius-md);
     display: flex;
@@ -337,7 +334,6 @@ button:disabled {
     overflow: hidden;
 }
 
-/* 統計區塊統一 */
 .stat-bar {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -357,7 +353,21 @@ button:disabled {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
+}
+
+.stat-badge.clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-badge.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.stat-badge.clickable:active {
+    transform: scale(0.97);
 }
 
 .stat-badge span {
@@ -370,9 +380,9 @@ button:disabled {
 .stat-badge.mastered { background: var(--color-success-light); color: #2d583e; border-color: #cae2d3; }
 .stat-badge.learning { background: var(--color-warning-light); color: #825828; border-color: #eeddc9; }
 
-/* 單字卡結構與視覺優化 */
+/* 單字卡片框線加粗加深 */
 .word-card {
-    border: 1px solid #dcd7ce;
+    border: 2px solid var(--border-dark);
     padding: 16px;
     margin-top: 12px;
     border-radius: var(--radius-lg);
@@ -380,7 +390,7 @@ button:disabled {
     width: 100%;
     box-sizing: border-box;
     transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 3px 10px rgba(50, 40, 30, 0.03);
+    box-shadow: 0 3px 10px rgba(50, 40, 30, 0.04);
     scroll-margin-top: 100px;
 }
 
@@ -395,50 +405,31 @@ button:disabled {
 
 .word-actions {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
 }
 
-.srs-box {
+.category-select-box {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
+    gap: 8px;
     margin-top: 6px;
-    padding: 8px 12px;
+    padding: 6px 12px;
     background: #f7f5f0;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
 }
 
-.srs-star {
-    color: #d99b26;
-    font-weight: bold;
-    letter-spacing: 1.5px;
-}
-
-.srs-due-tag {
-    background: var(--color-danger-light);
-    color: #8a3535;
-    padding: 2px 10px;
-    border-radius: var(--radius-pill);
-    font-weight: 600;
-    font-size: var(--font-size-xs);
-    border: 1px solid #edd2d2;
-}
-
-.srs-ok-tag {
-    background: var(--color-success-light);
-    color: #2d583e;
-    padding: 2px 10px;
-    border-radius: var(--radius-pill);
-    font-size: var(--font-size-xs);
-    border: 1px solid #cae2d3;
+.category-select-box select {
+    width: auto;
+    min-height: 34px;
+    padding: 4px 28px 4px 10px;
+    margin: 0;
     font-weight: 600;
 }
 
-/* 標籤徽章統一層級與視覺 (Capsule Badges) */
 .alert-badge, .tag-badge, .score-badge {
     display: inline-flex;
     align-items: center;
@@ -487,7 +478,6 @@ button:disabled {
     border-radius: 4px;
 }
 
-/* 莫蘭迪風格重點視覺強化樣式 (Key Highlight Styles) */
 .highlight-chip {
     display: inline-flex;
     align-items: center;
@@ -547,7 +537,6 @@ button:disabled {
     font-size: var(--font-size-body);
 }
 
-/* 詞性獨立翻譯樣式 */
 .pos-trans-chip {
     display: inline-flex;
     align-items: center;
@@ -590,7 +579,6 @@ button:disabled {
     font-size: var(--font-size-body);
 }
 
-/* 折疊與內容區塊 */
 details {
     width: 100%;
 }
@@ -618,10 +606,9 @@ details summary {
     gap: 12px;
 }
 
-/* 資訊模組 (Info Block) 美化與對比優化 */
 .info-block {
     background: var(--card-sub-bg);
-    border: 1px solid #e6e2d9;
+    border: 1.5px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 12px 14px;
 }
@@ -656,7 +643,6 @@ details summary {
     font-weight: 600;
 }
 
-/* 例句樣式優化 */
 .example-wrapper {
     margin-top: 8px;
 }
@@ -694,9 +680,10 @@ details summary {
 .zh-wrapper {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
     vertical-align: middle;
+    margin-left: 4px;
 }
 
 .zh-toggle-btn {
@@ -705,10 +692,20 @@ details summary {
     border: 1px solid var(--border-color);
     cursor: pointer;
     border-radius: 4px;
-    padding: 2px 6px;
+    padding: 2px 8px;
     font-size: var(--font-size-xs);
-    line-height: 1;
-    min-height: 22px;
+    line-height: 1.2;
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+.zh-toggle-btn:hover {
+    background: #ded7cb;
+    color: var(--text-main);
 }
 
 .zh-text.hidden {
@@ -736,7 +733,7 @@ details summary {
 
 .status-log-box {
     background: #f6f4ee;
-    border: 1px solid var(--border-color);
+    border: 1.5px solid var(--border-color);
     border-left: 4px solid var(--color-primary);
     padding: 12px;
     border-radius: var(--radius-sm);
@@ -796,10 +793,9 @@ details summary {
     color: var(--text-muted);
 }
 
-/* 測驗區塊與表格 */
 .quiz-box {
     background: #f4f7f9;
-    border: 1px solid #cfdeea;
+    border: 1.5px solid #cfdeea;
     border-radius: var(--radius-md);
     padding: 12px 14px;
     margin-top: 4px;
@@ -904,126 +900,178 @@ details summary {
 <div class="container">
     <h1>📚 AI TOEIC 全方位單字學習系統</h1>
 
-    <div class="card api-box">
-        <details id="settingsDetails">
-            <summary>⚙️ 系統與雲端連線設定 (Gemini & GitHub Gist)</summary>
-            <div style="margin-top:12px;">
-                <label><strong>🔑 Gemini API Key：</strong></label>
-                <input id="apiKeyInput" type="text" placeholder="貼上您的 Gemini API Key" onchange="saveSettings(false)">
+    <!-- 主頁面 View -->
+    <div id="mainPage">
+        <div class="card api-box">
+            <details id="settingsDetails">
+                <summary>⚙️ 系統與雲端連線設定 (Gemini & GitHub Gist)</summary>
+                <div style="margin-top:12px;">
+                    <label><strong>🔑 Gemini API Key：</strong></label>
+                    <input id="apiKeyInput" type="text" placeholder="貼上您的 Gemini API Key" onchange="saveSettings(false)">
 
-                <div style="margin-top:12px; border-top: 1px dashed var(--border-dashed); padding-top: 10px;">
-                    <label><strong>🐙 GitHub Personal Access Token：</strong></label>
-                    <input id="githubTokenInput" type="text" placeholder="帶有 gist 權限的 GitHub Token" onchange="saveSettings(false)">
-                    
-                    <label style="margin-top:8px; display:block;"><strong>📄 GitHub Gist ID：</strong></label>
-                    <input id="gistIdInput" type="text" placeholder="留空將自動尋找並綁定" onchange="saveSettings(false)">
-                </div>
-
-                <div style="margin-top:12px; display:flex; gap:8px;">
-                    <button class="primary btn-sm" style="flex:2;" onclick="saveSettings(true)">💾 儲存並同步</button>
-                    <button class="secondary btn-sm" style="flex:1;" onclick="resetToDefault()">🔄 重置</button>
-                </div>
-            </div>
-        </details>
-    </div>
-
-    <div class="card sticky-search">
-        <input id="wordInput" placeholder="輸入英文單字或中文..." onkeydown="handleKeyDown(event)">
-        <div class="search-controls-row">
-            <button id="searchBtn" class="primary" style="flex:2;" onclick="lookupWord()">🤖 Gemini 分析</button>
-            <button class="voice-female" style="flex:1;" onclick="speakText(null, 'female')">👩 女聲</button>
-            <button class="voice-male" style="flex:1;" onclick="speakText(null, 'male')">👨 男聲</button>
-        </div>
-    </div>
-
-    <div class="card" id="resultContainer">
-        <h2>AI 分析結果</h2>
-        <div id="result" style="color:var(--text-muted); font-size: var(--font-size-body); margin-top:6px;">請輸入單字或中文進行查詢</div>
-    </div>
-
-    <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
-            <h2 style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                我的單字庫
-                <div class="count-badge-box">
-                    <span>💻 <strong id="localWordCount">0</strong></span>
-                    <span>|</span>
-                    <span>☁️ <strong id="cloudWordCount">-</strong></span>
-                </div>
-            </h2>
-            <div id="syncStatusInfo" style="font-size:var(--font-size-xs); color:var(--text-muted); background:#f8f6f1; border:1px solid var(--border-color); padding:3px 8px; border-radius:6px;">
-                ☁️ 檢查中...
-            </div>
-        </div>
-        
-        <div class="stat-bar" id="statBar">
-            <div class="stat-badge due">🎯 待複習 <span id="statDue">0</span></div>
-            <div class="stat-badge learning">📖 學習中 <span id="statLearning">0</span></div>
-            <div class="stat-badge mastered">🏆 已精通 <span id="statMastered">0</span></div>
-        </div>
-
-        <div class="control-panel">
-            <div class="control-row">
-                <div class="search-input-wrap">
-                    <input id="filterInput" placeholder="🔍 搜尋已儲存單字..." oninput="handleFilterInput()">
-                    <button id="clearSearchBtn" class="clear-search-btn" onclick="clearSearchFilter()">✖</button>
-                </div>
-                <select id="sortSelect" onchange="renderWordList()">
-                    <option value="time-desc" selected>⏱️ 時間 (最新 ➔ 最舊)</option>
-                    <option value="time-asc">⏱️ 時間 (最舊 ➔ 最新)</option>
-                    <option value="srs-level-asc">⭐ 熟練度 (低 ➔ 高)</option>
-                    <option value="srs-level-desc">⭐ 熟練度 (高 ➔ 低)</option>
-                    <option value="alpha-asc">🔤 字母 (A ➔ Z)</option>
-                    <option value="alpha-desc">🔤 字母 (Z ➔ A)</option>
-                    <option value="srs-due">🎯 複習優先</option>
-                </select>
-                <button id="filterDueBtn" class="warning" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
-            </div>
-
-            <div class="toolbar-section">
-                <div class="toolbar-grid">
-                    <div class="toolbar-card">
-                        <div class="toolbar-card-title">☁️ 雲端與備份</div>
-                        <div class="toolbar-btn-group">
-                            <button class="success btn-sm" onclick="performFullSync(true)">🔄 同步</button>
-                            <button class="warning btn-sm" onclick="pullCloudToLocal(true)">☁️ 蓋本地</button>
-                            <button class="danger btn-sm" onclick="clearLocalDatabase()">🗑️ 清空</button>
-                        </div>
+                    <div style="margin-top:12px; border-top: 1px dashed var(--border-dashed); padding-top: 10px;">
+                        <label><strong>🐙 GitHub Personal Access Token：</strong></label>
+                        <input id="githubTokenInput" type="text" placeholder="帶有 gist 權限的 GitHub Token" onchange="saveSettings(false)">
+                        
+                        <label style="margin-top:8px; display:block;"><strong>📄 GitHub Gist ID：</strong></label>
+                        <input id="gistIdInput" type="text" placeholder="留空將自動尋找並綁定" onchange="saveSettings(false)">
                     </div>
 
-                    <div class="toolbar-card">
-                        <div class="toolbar-card-title">👁️ 檢視與模式</div>
-                        <div class="toolbar-btn-group">
-                            <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
-                            <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
-                            <button class="secondary btn-sm" onclick="toggleAllTranslations()">👁️ 翻譯</button>
-                        </div>
-                    </div>
-
-                    <div class="toolbar-card">
-                        <div class="toolbar-card-title">🛠️ 資料管理</div>
-                        <div class="toolbar-btn-group">
-                            <button id="upgradeBtn" class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 補齊</button>
-                            <button class="secondary btn-sm" onclick="exportData()">💾 匯出</button>
-                            <button class="secondary btn-sm" onclick="document.getElementById('fileInput').click()">📥 匯入</button>
-                        </div>
+                    <div style="margin-top:12px; display:flex; gap:8px;">
+                        <button class="primary btn-sm" style="flex:2;" onclick="saveSettings(true)">💾 儲存並同步</button>
+                        <button class="secondary btn-sm" style="flex:1;" onclick="resetToDefault()">🔄 重置</button>
                     </div>
                 </div>
-                <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
+            </details>
+        </div>
+
+        <div class="card sticky-search">
+            <input id="wordInput" placeholder="輸入英文單字或中文..." onkeydown="handleKeyDown(event)">
+            <div class="search-controls-row">
+                <button id="searchBtn" class="primary" style="flex:2;" onclick="lookupWord()">🤖 Gemini 分析</button>
+                <button class="voice-female" style="flex:1;" onclick="speakText(null, 'female')">👩 女聲</button>
+                <button class="voice-male" style="flex:1;" onclick="speakText(null, 'male')">👨 男聲</button>
             </div>
         </div>
 
-        <div id="wordList"></div>
+        <div class="card" id="resultContainer">
+            <h2>AI 分析結果</h2>
+            <div id="result" style="color:var(--text-muted); font-size: var(--font-size-body); margin-top:6px;">請輸入單字或中文進行查詢</div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                <h2 style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    我的單字庫
+                    <div class="count-badge-box">
+                        <span>💻 <strong id="localWordCount">0</strong></span>
+                        <span>|</span>
+                        <span>☁️ <strong id="cloudWordCount">-</strong></span>
+                    </div>
+                </h2>
+                <div id="syncStatusInfo" style="font-size:var(--font-size-xs); color:var(--text-muted); background:#f8f6f1; border:1px solid var(--border-color); padding:3px 8px; border-radius:6px;">
+                    ☁️ 檢查中...
+                </div>
+            </div>
+            
+            <div style="font-size: var(--font-size-xs); color: var(--text-muted); text-align: center; margin-bottom: 8px;">💡 點擊下方分類標籤，即可切換至該分類的獨立單字庫頁面</div>
+
+            <div class="stat-bar" id="statBar">
+                <div class="stat-badge due clickable" onclick="openCategoryPage('due')" title="點擊查看待複習單字庫">🎯 待複習 <span id="statDue">0</span></div>
+                <div class="stat-badge learning clickable" onclick="openCategoryPage('learning')" title="點擊查看學習中單字庫">📖 學習中 <span id="statLearning">0</span></div>
+                <div class="stat-badge mastered clickable" onclick="openCategoryPage('mastered')" title="點擊查看已精通單字庫">🏆 已精通 <span id="statMastered">0</span></div>
+            </div>
+
+            <div class="control-panel">
+                <div class="control-row">
+                    <div class="search-input-wrap">
+                        <input id="filterInput" placeholder="🔍 搜尋已儲存單字..." oninput="handleFilterInput()">
+                        <button id="clearSearchBtn" class="clear-search-btn" onclick="clearSearchFilter()">✖</button>
+                    </div>
+                    <select id="sortSelect" onchange="renderWordList()">
+                        <option value="time-desc" selected>⏱️ 時間 (最新 ➔ 最舊)</option>
+                        <option value="time-asc">⏱️ 時間 (最舊 ➔ 最新)</option>
+                        <option value="alpha-asc">🔤 字母 (A ➔ Z)</option>
+                        <option value="alpha-desc">🔤 字母 (Z ➔ A)</option>
+                        <option value="category-asc">📊 熟練度 / 分類 (待複習 ➔ 學習中 ➔ 已精通)</option>
+                    </select>
+                    <button id="filterDueBtn" class="warning" onclick="toggleDueOnlyFilter()">🎯 待複習 (<span id="dueCount">0</span>)</button>
+                </div>
+
+                <div class="toolbar-section">
+                    <div class="toolbar-grid">
+                        <div class="toolbar-card">
+                            <div class="toolbar-card-title">☁️ 雲端與備份</div>
+                            <div class="toolbar-btn-group">
+                                <button class="success btn-sm" onclick="performFullSync(true)">🔄 同步</button>
+                                <button class="warning btn-sm" onclick="pullCloudToLocal(true)">☁️ 蓋本地</button>
+                                <button class="danger btn-sm" onclick="clearLocalDatabase()">🗑️ 清空</button>
+                            </div>
+                        </div>
+
+                        <div class="toolbar-card">
+                            <div class="toolbar-card-title">👁️ 檢視與模式</div>
+                            <div class="toolbar-btn-group">
+                                <button class="secondary btn-sm" onclick="toggleAllDetails(true)">📂 展開</button>
+                                <button class="secondary btn-sm" onclick="toggleAllDetails(false)">📁 折疊</button>
+                                <button class="secondary btn-sm" onclick="toggleAllTranslations()">👁️ 翻譯</button>
+                            </div>
+                        </div>
+
+                        <div class="toolbar-card">
+                            <div class="toolbar-card-title">🛠️ 資料管理</div>
+                            <div class="toolbar-btn-group">
+                                <button id="upgradeBtn" class="primary btn-sm" onclick="upgradeOldWords(event)">⚡ 補齊</button>
+                                <button class="secondary btn-sm" onclick="exportData()">💾 匯出</button>
+                                <button class="secondary btn-sm" onclick="document.getElementById('fileInput').click()">📥 匯入</button>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importData(event)">
+                </div>
+            </div>
+
+            <div id="wordList"></div>
+        </div>
+    </div>
+
+    <!-- 獨立分類單字頁面 View -->
+    <div id="categoryPage" style="display:none;">
+        <div class="card" style="margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <button class="secondary btn-sm" onclick="showMainPage()" style="margin-bottom: 6px;">🏠 返回主頁面</button>
+                    <h2 id="categoryPageTitle" style="display: flex; align-items: center; gap: 8px;">
+                        📂 分類單字庫
+                    </h2>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="success btn-sm" onclick="performFullSync(true)">🔄 雲端同步</button>
+                    <button class="primary btn-sm" onclick="showMainPage()">🏠 返回主頁</button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 12px; border-top: 1px dashed var(--border-dashed); padding-top: 10px; flex-wrap: wrap;">
+                <button id="catTabDue" class="btn-sm warning" onclick="switchCategory('due')">🎯 待複習 (<span id="catDueCount">0</span>)</button>
+                <button id="catTabLearning" class="btn-sm warning" onclick="switchCategory('learning')">📖 學習中 (<span id="catLearningCount">0</span>)</button>
+                <button id="catTabMastered" class="btn-sm warning" onclick="switchCategory('mastered')">🏆 已精通 (<span id="catMasteredCount">0</span>)</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="control-panel">
+                <div class="control-row">
+                    <div class="search-input-wrap">
+                        <input id="catFilterInput" placeholder="🔍 在此分類中搜尋..." oninput="handleCatFilterInput()">
+                        <button id="catClearSearchBtn" class="clear-search-btn" onclick="clearCatSearchFilter()">✖</button>
+                    </div>
+                    <select id="catSortSelect" onchange="renderCategoryWordList()">
+                        <option value="time-desc" selected>⏱️ 時間 (最新 ➔ 最舊)</option>
+                        <option value="time-asc">⏱️ 時間 (最舊 ➔ 最新)</option>
+                        <option value="alpha-asc">🔤 字母 (A ➔ Z)</option>
+                        <option value="alpha-desc">🔤 字母 (Z ➔ A)</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px;">
+                    <button class="secondary btn-xs" onclick="toggleCatAllDetails(true)">📂 展開全部</button>
+                    <button class="secondary btn-xs" onclick="toggleCatAllDetails(false)">📁 折疊全部</button>
+                </div>
+            </div>
+
+            <div id="categoryWordList"></div>
+        </div>
     </div>
 </div>
 
 <script>
 const DEFAULT_API_KEY = "AQ.Ab8RN6LpVQW9YcWDK5DeBWkqgnarqq-bxoKSDYjaQWmGHFRYsQ";
-const SRS_INTERVALS = [0, 1, 3, 7, 14, 30];
 
 let filterDueOnly = false;
 let currentResultData = null;
 let cachedCandidateModels = null;
+let currentCategory = 'due'; // 'due', 'learning', 'mastered'
+let catSearchKeyword = "";
+let searchKeyword = "";
 
 function getApiKey() {
     return localStorage.getItem("gemini_api_key") || DEFAULT_API_KEY;
@@ -1053,6 +1101,18 @@ function scrollToResult() {
     });
 }
 
+function formatTimeDisplay(timestamp) {
+    if (!timestamp) return '無紀錄';
+    const d = new Date(timestamp);
+    if (isNaN(d.getTime())) return '無紀錄';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}/${mm}/${dd} ${hh}:${min}`;
+}
+
 function updateSyncStatusDisplay(type = 'normal') {
     const infoEl = document.getElementById("syncStatusInfo");
     if (!infoEl) return;
@@ -1061,7 +1121,7 @@ function updateSyncStatusDisplay(type = 'normal') {
     const gistId = getGistId();
     const lastSync = localStorage.getItem("last_sync_time");
     
-    let timeStr = lastSync ? new Date(parseInt(lastSync)).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '未同步';
+    let timeStr = lastSync ? formatTimeDisplay(parseInt(lastSync)) : '未同步';
 
     if (!token) {
         infoEl.innerHTML = `⚠️ 未設定 Token`;
@@ -1142,15 +1202,13 @@ function safeParseJSON(jsonStr) {
 }
 
 function getItemTime(item) {
-    if (!item) return 0;
-    let t = item.updatedAt || item.createdAt || 0;
-    if (typeof t === 'string') t = Date.parse(t) || 0;
-    return Number(t) || 0;
+    return getCreatedTime(item);
 }
 
 function getCreatedTime(item) {
     if (!item) return 0;
-    let t = item.createdAt || item.updatedAt || 0;
+    let t = item.createdAt;
+    if (!t) t = item.updatedAt || 0;
     if (typeof t === 'string') t = Date.parse(t) || 0;
     return Number(t) || 0;
 }
@@ -1162,18 +1220,30 @@ function mergeDatasets(localList, remoteList) {
         if (!item || !item.word) return;
         const cleanName = sanitizeWord(item.word);
         const key = cleanName.toLowerCase();
-        const itemTime = getItemTime(item);
+        const itemTime = Number(item.updatedAt) || Number(item.createdAt) || Date.now();
+        const createdTime = getCreatedTime(item);
+        const validCategories = ['due', 'learning', 'mastered'];
 
         if (!map.has(key)) {
-            map.set(key, { ...item, word: cleanName, updatedAt: itemTime });
+            let cat = item.category;
+            if (!validCategories.includes(cat)) cat = 'due';
+            map.set(key, { ...item, word: cleanName, createdAt: createdTime || Date.now(), updatedAt: itemTime, category: cat });
         } else {
             const existing = map.get(key);
-            const existingTime = getItemTime(existing);
+            const existingTime = Number(existing.updatedAt) || Number(existing.createdAt) || Date.now();
+            const existingCreated = getCreatedTime(existing);
 
-            if (itemTime >= existingTime) {
-                map.set(key, { ...existing, ...item, word: cleanName, updatedAt: itemTime });
+            const lockedCreated = (existingCreated && createdTime) ? Math.min(existingCreated, createdTime) : (existingCreated || createdTime || Date.now());
+            const newestUpdated = Math.max(existingTime, itemTime);
+
+            if (itemTime > existingTime) {
+                let cat = item.category;
+                if (!validCategories.includes(cat)) cat = existing.category || 'due';
+                map.set(key, { ...existing, ...item, word: cleanName, createdAt: lockedCreated, updatedAt: newestUpdated, category: cat });
             } else {
-                map.set(key, { ...item, ...existing, word: cleanName, updatedAt: existingTime });
+                let cat = existing.category;
+                if (!validCategories.includes(cat)) cat = item.category || 'due';
+                map.set(key, { ...item, ...existing, word: cleanName, createdAt: lockedCreated, updatedAt: newestUpdated, category: cat });
             }
         }
     };
@@ -1315,7 +1385,7 @@ function clearLocalDatabase() {
 
     if (confirm(`⚠️ 確定刪除本地 ${localWords.length} 個單字？（不影響雲端備份）`)) {
         localStorage.removeItem("vocabDB");
-        renderWordList();
+        refreshActiveView();
         alert("🗑️ 本地已清空！");
     }
 }
@@ -1445,6 +1515,11 @@ function toggleAllDetails(expand) {
     detailsEls.forEach(d => d.open = expand);
 }
 
+function toggleCatAllDetails(expand) {
+    const detailsEls = document.querySelectorAll('#categoryWordList details');
+    detailsEls.forEach(d => d.open = expand);
+}
+
 function sanitizeWord(word) {
     if (!word || typeof word !== 'string') return word;
     word = word.trim();
@@ -1483,30 +1558,59 @@ function normalizeWordData(data) {
         }
     }
 
-    if (!posMap || typeof posMap !== 'object' || Object.keys(posMap).length === 0) {
-        posMap = {};
-        
+    const standardizePosKey = (keyStr) => {
+        if (!keyStr) return '';
+        let k = keyStr.trim().toLowerCase();
+        k = k.replace(/^(noun|名詞)$/i, 'n.')
+             .replace(/^(verb|動詞|vt\.|vi\.|vt|vi)$/i, 'v.')
+             .replace(/^(adjective|形容詞)$/i, 'adj.')
+             .replace(/^(adverb|副詞)$/i, 'adv.')
+             .replace(/^(preposition|介系詞)$/i, 'prep.')
+             .replace(/^(conjunction|連接詞)$/i, 'conj.')
+             .replace(/^(phrase|片語)$/i, 'phr.');
+        if (/^[a-z]+$/i.test(k)) k += '.';
+        return k;
+    };
+
+    let cleanedPosMap = {};
+    if (posMap && typeof posMap === 'object' && !Array.isArray(posMap)) {
+        for (let [k, v] of Object.entries(posMap)) {
+            if (!k || !v) continue;
+            let normKey = standardizePosKey(k);
+            if (normKey) {
+                cleanedPosMap[normKey] = (typeof v === 'string') ? v.trim() : v;
+            }
+        }
+    }
+
+    if (Object.keys(cleanedPosMap).length === 0) {
         if (typeof data.chinese === 'string' && data.chinese.trim()) {
             const str = data.chinese.trim();
             const regex = /(?:([a-zA-Z]+\.|\【.*?\】|名詞|動詞|形容詞|副詞|介系詞|連接詞)[:：\s]*)([^;；|/]+)/gi;
             let match;
             while ((match = regex.exec(str)) !== null) {
-                posMap[match[1].trim()] = match[2].trim();
+                let normKey = standardizePosKey(match[1]);
+                if (normKey) cleanedPosMap[normKey] = match[2].trim();
             }
             
-            if (Object.keys(posMap).length === 0) {
+            if (Object.keys(cleanedPosMap).length === 0) {
                 let posKey = (data.partOfSpeech && data.partOfSpeech.trim()) ? data.partOfSpeech.trim() : 'n.';
-                if (/^[a-zA-Z]+$/.test(posKey)) posKey += '.';
-                posMap[posKey] = str;
+                posKey = posKey.split(/[,/]/)[0].trim();
+                let normKey = standardizePosKey(posKey);
+                cleanedPosMap[normKey || 'n.'] = str;
             }
         } else if (typeof data.chinese === 'object' && data.chinese !== null) {
-            posMap = data.chinese;
+            cleanedPosMap = data.chinese;
         }
     }
 
+    const posKeys = Object.keys(cleanedPosMap);
+    let syncedPartOfSpeech = posKeys.length > 0 ? posKeys.join(', ') : (data.partOfSpeech || '');
+
     return {
         ...data,
-        posTranslations: Object.keys(posMap).length > 0 ? posMap : data.posTranslations
+        partOfSpeech: syncedPartOfSpeech,
+        posTranslations: Object.keys(cleanedPosMap).length > 0 ? cleanedPosMap : data.posTranslations
     };
 }
 
@@ -1525,23 +1629,35 @@ function checkAndFixDatabaseWords(words) {
 
         const normalized = normalizeWordData(item);
 
-        let updated = cleanedWord !== item.word || JSON.stringify(normalized.posTranslations) !== JSON.stringify(item.posTranslations);
-        const mastery = typeof item.mastery === 'number' ? item.mastery : 0;
-        const nextReviewDate = typeof item.nextReviewDate === 'number' ? item.nextReviewDate : 0;
-        const lastReviewedAt = typeof item.lastReviewedAt === 'number' ? item.lastReviewedAt : 0;
-        const createdAt = typeof item.createdAt === 'number' ? item.createdAt : (typeof item.updatedAt === 'number' ? item.updatedAt : Date.now());
-        const updatedAtVal = typeof item.updatedAt === 'number' ? item.updatedAt : createdAt;
+        let updated = cleanedWord !== item.word || 
+                      JSON.stringify(normalized.posTranslations) !== JSON.stringify(item.posTranslations) ||
+                      normalized.partOfSpeech !== item.partOfSpeech;
+        
+        let category = item.category;
+        const validCategories = ['due', 'learning', 'mastered'];
+        if (!category || category === 'undefined' || !validCategories.includes(category)) {
+            category = 'due';
+            updated = true;
+        }
+
+        let createdAt = item.createdAt;
+        if (typeof createdAt === 'string') createdAt = Date.parse(createdAt) || 0;
+        if (!createdAt) createdAt = item.updatedAt || Date.now();
+        if (typeof createdAt === 'string') createdAt = Date.parse(createdAt) || Date.now();
+
+        let updatedAtVal = item.updatedAt;
+        if (typeof updatedAtVal === 'string') updatedAtVal = Date.parse(updatedAtVal) || 0;
+        if (!updatedAtVal) updatedAtVal = createdAt;
+
         const isDeleted = Boolean(item.isDeleted);
 
-        if (updated || item.mastery === undefined || item.updatedAt === undefined) fixCount++;
+        if (updated || item.createdAt === undefined) fixCount++;
 
         uniqueWords.push({
             ...normalized,
             word: cleanedWord,
-            mastery,
-            nextReviewDate,
-            lastReviewedAt,
-            createdAt,
+            category: category,
+            createdAt: createdAt,
             updatedAt: updatedAtVal,
             isDeleted
         });
@@ -1588,10 +1704,49 @@ function getWords() {
     return checkAndFixDatabaseWords(raw);
 }
 
+function refreshActiveView() {
+    renderWordList();
+    updateStatCounts();
+    if (document.getElementById("categoryPage").style.display !== "none") {
+        renderCategoryWordList();
+    }
+}
+
+function updateStatCounts() {
+    const words = getWords().filter(w => !w.isDeleted);
+    let dueCount = 0, learningCount = 0, masteredCount = 0;
+    words.forEach(w => {
+        const cat = w.category || 'due';
+        if (cat === 'learning') learningCount++;
+        else if (cat === 'mastered') masteredCount++;
+        else dueCount++;
+    });
+
+    const statDue = document.getElementById("statDue");
+    const statLearning = document.getElementById("statLearning");
+    const statMastered = document.getElementById("statMastered");
+    const dueCountSpan = document.getElementById("dueCount");
+    const localWordCount = document.getElementById("localWordCount");
+
+    const catDueCount = document.getElementById("catDueCount");
+    const catLearningCount = document.getElementById("catLearningCount");
+    const catMasteredCount = document.getElementById("catMasteredCount");
+
+    if (statDue) statDue.textContent = dueCount;
+    if (statLearning) statLearning.textContent = learningCount;
+    if (statMastered) statMastered.textContent = masteredCount;
+    if (dueCountSpan) dueCountSpan.textContent = dueCount;
+    if (localWordCount) localWordCount.textContent = words.length;
+
+    if (catDueCount) catDueCount.textContent = dueCount;
+    if (catLearningCount) catLearningCount.textContent = learningCount;
+    if (catMasteredCount) catMasteredCount.textContent = masteredCount;
+}
+
 function saveWords(words, autoSync = true) {
     const cleanedWords = checkAndFixDatabaseWords(words);
     localStorage.setItem("vocabDB", JSON.stringify(cleanedWords));
-    renderWordList();
+    refreshActiveView();
     if (autoSync) performFullSync(false);
 }
 
@@ -1638,68 +1793,75 @@ function renderChineseHTML(item, isCompact = true) {
     }
 }
 
-/* 擴充多益深度分析 Prompt */
 function getAIPrompt(word) {
     return `深度分析使用者輸入的詞彙："${word}"（無論輸入大寫、小寫或混合，請自動辨識並進行全面分析）。
 若為中文請找出對應的核心英文單字並填入 "word"。
 
+【多益目標分數與難易度判定嚴格規則】：
+"targetScore" 必須嚴格依據該單字在英語體系中的真實難易度與多益考頻進行精確評估，格式為：『分數區間 (難度級別)』，絕對不允許對簡單基礎常見單字進行無根據的高分誇大標記！
+- 基礎常見單字 (如 book, water, help, contact, notice, plan)：必須標示為『350-550分 (基礎/綠牌)』
+- 中等職場單字 (如 accommodate, acquire, evaluate, authorize)：標示為『550-750分 (中級/藍牌)』
+- 高階專業商務單字 (如 liquidation, jurisprudence, restructuring)：標示為『750-860分+ (高階/金牌)』
+
 【音標特別要求】：
 "phonetic" 欄位必須嚴格使用【美式 KK 音標 (American KK Phonetic Alphabet)】！
-音標務必與該單字在多益考試中最核心的詞性 (Part of Speech) 與發音精確對應。嚴禁使用英式IPA或不合規範的標示！
+音標務必與該單字在多益考試中最核心的詞性 (Part of Speech) 與發音精確對應。嚴禁使用英式IPA或不合規範的標記！
+
+【詞性與分詞性翻譯嚴格要求】：
+1. "posTranslations" 必須包含該單字在多益中的所有常見詞性與對應繁體中文翻譯。Key 必須統一使用小寫標準英文縮寫加上句點（例如: "n.", "v.", "adj.", "adv.", "prep.", "conj.", "phr."）。
+2. "partOfSpeech" 必須與 "posTranslations" 中出現的所有 Key 完全保持一致並以逗號分隔（例如: "v., n."），嚴禁出現頂部詞性標籤與 posTranslations 內容互相矛盾或不齊全的情況！
+3. 若該單字包含動詞詞性 (v.)，請提供 "verbTenses"（動詞三態變化）；若該單字在多益中不具備動詞用法（例如純名詞 n.、純形容詞 adj.、副詞 adv. 等），"verbTenses" 內所有欄位 ("base", "past", "pastParticiple", "presentParticiple") 請統一填寫 null 或 "-"，嚴禁為非動詞生成動詞三態！
+4. 若單字同時具備動詞與名詞/形容詞等用法（例如 record, contact, process, impact），"partOfSpeech" 與 "posTranslations" 必須同時包含 "v." 及其他對應詞性（例如 "v., n."），確保頂部詞性標籤與動詞三態欄位完全吻合對齊。
+
+【翻譯與中文附註嚴格要求】：
+1. 僅「多益重點與高頻核心英文」（如關鍵衍生字、搭配詞、同義字、反義字、易混淆字、Part 7 同義替換等）才需要在英文後方加上括號標示繁體中文翻譯，格式：English Word (中文翻譯)。例如："conduct a performance review (進行績效評估)"、"applicant (申請人)"。
+2. 絕對禁止在「中文說明或中文詞彙」後面反向加上英文翻譯！例如「進行績效評估 (conduct a performance review)」是錯誤的，正確應為英文在前。
+3. 普通輔助說明文字、中文欄位內容或非關鍵英文單字，無須刻意加上中文翻譯，保持內容精鍊簡潔。
 
 【多益擴充資料要求】：
 請特別加入多益七大 Part (Part 1~Part 7) 考點定位、聽力混淆類型與商務高頻連體搭配詞。
 
 回覆嚴格 JSON 格式：
 {
- "word": "正確的英文單字拼寫（規範：普通一般單字保存時請務必使用【全小寫】；特定專有名詞、地名、人名、月份、縮寫或特殊品牌等需大寫者，請顯示正確首字母大寫或全大寫）",
- "caseAnalysis": "大小寫差異與語意分析（詳細說明該詞彙在全小寫與首字大寫/全大寫時是否有語意、詞性、專有名詞或縮寫上的差異。若無差異，請寫：'普通單字，無大小寫語意或專有名詞差異'）",
- "tag": "情境分類標籤 (例如: 人力資源與企業文化、辦公室溝通、商務商談、財務會計、物流供應鏈)",
- "targetScore": "多益分數與考頻 (如: 650分中階頻考 或 860分高階高頻考點)",
+ "word": "正確的英文單字拼寫",
+ "caseAnalysis": "大小寫差異與語意分析",
+ "tag": "情境分類標籤",
+ "targetScore": "請依前述規則精確標記多益分數區間",
  "verbTenses": { "base": "原形", "past": "過去式", "pastParticiple": "過去分詞", "presentParticiple": "現在分詞" },
  "businessContext": "商務職場句型與中文",
- "toeicPartFocus": "多益 Part 1~7 核心分佈 (例: Part 1 照片題描述；Part 5 詞性與搭配詞；Part 7 長篇同義替換)",
- "businessCollocations": ["商務高頻連體搭配1 (如: conduct a performance review)", "商務高頻連體搭配2"],
- "listeningDistractors": "聽力易混淆音與干擾陷阱提示 (含近音字、連音或一詞多義干擾)",
+ "toeicPartFocus": "多益 Part 1~7 核心分佈",
+ "businessCollocations": ["商務高頻連體搭配1 (中文翻譯)"],
+ "listeningDistractors": "聽力易混淆音與干擾陷阱提示",
  "mnemonicTip": "諧音/聯想口訣",
  "ukUsVariation": "英美發音與拼寫差異",
  "grammaticalForm": "詞態文法分析",
  "rootAnalysis": "字根拆解",
- "phonetic": "美式 KK 音標 (例如: /prəˈspoʊsəl/ 或 [prəˈpozl])",
- "partOfSpeech": "詞性 (如 n., v., adj., adv., prep., conj.)",
+ "phonetic": "美式 KK 音標",
+ "partOfSpeech": "詞性 (如: v., n.)",
  "chinese": "中文繁體總覽翻譯",
- "posTranslations": {
-    "n.": "當名詞時的中文翻譯",
-    "v.": "當動詞時的中文翻譯"
- },
+ "posTranslations": { "v.": "動詞翻譯", "n.": "名詞翻譯" },
  "toeic": "常考情境與主題",
- "part7Synonyms": "Part 7 長篇閱讀關鍵同義替換 (例如: submit ➔ hand in / send over)",
- "grammarTraps": "文法陷阱 (例如: 易被誤用為可數/不可數、授受動詞用法、受詞後接 to V / Ving)",
- "derivatives": ["衍生字1", "衍生字2"],
- "collocations": ["搭配詞1", "搭配詞2"],
- "prepCollocations": ["核心介系詞搭配1 (如: apply for + N)", "核心介系詞搭配2"],
- "businessEmailContext": "實用 Email/廣告情境句 (Part 6/7)",
- "pronunciationTip": "重音與美式連音提示 (例如: 重音在第二音節，al發弱音)",
- "confusableMatrix": [
-    {"word": "易混淆字1", "diff": "一語點破差異/詞性不同"}
- ],
+ "part7Synonyms": "Part 7 長篇閱讀關鍵同義替換",
+ "grammarTraps": "文法陷阱",
+ "derivatives": ["衍生字1 (中文翻譯)"],
+ "collocations": ["搭配詞1 (中文翻譯)"],
+ "prepCollocations": ["核心介系詞搭配1 (例如: apply for (申請))"],
+ "businessEmailContext": "實用 Email/廣告情境句",
+ "pronunciationTip": "重音與美式連音提示",
+ "confusableMatrix": [{"word": "易混淆字1 (中文翻譯)", "diff": "核心差異"}],
  "part5Quiz": {
-    "question": "包含底線 ____ 的 Part 5 多益文法/詞彙選擇題",
+    "question": "包含底線 ____ 的 Part 5 多益文法選擇題",
     "options": ["(A) 選項1", "(B) 選項2", "(C) 選項3", "(D) 選項4"],
-    "answer": "正確選項字號 (例如: (A))",
-    "explain": "題目解析與翻譯"
+    "answer": "(A)",
+    "explain": "題目解析"
  },
- "synonyms": ["同義字1"],
- "antonyms": ["反義字1"],
- "confusables": ["易混淆字"],
+ "synonyms": ["同義字1 (中文翻譯)"],
+ "antonyms": ["反義字1 (中文翻譯)"],
+ "confusables": ["易混淆字 (中文翻譯)"],
  "example1_en": "例句1", "example1_zh": "翻譯1",
  "example2_en": "例句2", "example2_zh": "翻譯2",
  "example3_en": "例句3", "example3_zh": "翻譯3"
-}
-【重要規範】
-1. "posTranslations" 規範：務必依據單字具備的個別詞性 (如 "n.", "v.", "adj.") 拆開填寫對應中文！
-2. "verbTenses" 欄位規則：僅當該單字包含動詞 (Verb) 詞性時才填寫內容；無動詞用法者，請務必將 "verbTenses" 設為 null！
-3. "phonetic" 規範：必須嚴格產出對應美式發音的 KK 音標，切勿與英式標示混淆。`;
+}`;
 }
 
 async function getCandidateModels(apiKey) {
@@ -1764,7 +1926,7 @@ async function fetchGeminiAPI(prompt, onProgress) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 system_instruction: {
-                    parts: [{ text: "你是一位專業的 TOEIC 英文教學專家。請根據要求輸出精確、美式 KK 音標無誤且結構嚴謹的 JSON 資料。" }]
+                    parts: [{ text: "你是一位專業的 TOEIC 英文教學專家。請根據要求輸出精確、美式 KK 音標無誤、難易度判定準確且結構嚴謹的 JSON 資料。" }]
                 },
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { 
@@ -1828,6 +1990,11 @@ async function analyzeWordWithAI(wordInput, onProgress) {
     resultData.word = sanitizeWord(resultData.word);
     const normalizedData = normalizeWordData(resultData);
     return { data: normalizedData, usedModel };
+}
+
+function isWordIncomplete(item) {
+    if (!item) return true;
+    return !item.posTranslations || !item.part5Quiz || !item.example1_en;
 }
 
 async function lookupWord(forceAI = false) {
@@ -1965,9 +2132,22 @@ function renderGrammaticalForm(formText) {
     return `<span>${formattedText} ${badgeHTML}</span>`;
 }
 
-function renderVerbTensesBox(vt) {
+function renderVerbTensesBox(vt, item) {
     if (!vt || typeof vt !== 'object') return '';
-    
+
+    let hasVerbPos = false;
+    if (item) {
+        const posStr = (item.partOfSpeech || '').toLowerCase();
+        let posKeys = [];
+        if (item.posTranslations && typeof item.posTranslations === 'object') {
+            posKeys = Object.keys(item.posTranslations).map(k => k.toLowerCase());
+        }
+        hasVerbPos = posStr.includes('v.') || posStr.includes('vt') || posStr.includes('vi') || posStr.includes('verb') || posStr.includes('動詞') ||
+                     posKeys.some(k => k.includes('v.') || k.includes('vt') || k.includes('vi') || k.includes('verb') || k.includes('動詞'));
+    }
+
+    if (!hasVerbPos) return '';
+
     const isValidValue = (val) => {
         if (!val || typeof val !== 'string') return false;
         const clean = val.trim().toLowerCase();
@@ -2040,7 +2220,6 @@ function renderConfusableMatrix(matrix) {
     `;
 }
 
-/* 將陣列或字串轉為帶顯眼顏色的膠囊標籤 (Chips) 輔助函式 */
 function formatChipsHTML(data, chipClass = 'highlight-chip') {
     if (!data) return '-';
     let arr = Array.isArray(data) ? data : (typeof data === 'string' ? data.split(/[；;]/).map(s => s.trim()).filter(Boolean) : []);
@@ -2057,7 +2236,7 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
     const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
     const tagBadge = renderTagBadge(item.tag);
     const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
-    const verbTensesHTML = renderVerbTensesBox(item.verbTenses);
+    const verbTensesHTML = renderVerbTensesBox(item.verbTenses, item);
     const quizHTML = renderQuizBox(item.part5Quiz, cardId);
     const matrixHTML = renderConfusableMatrix(item.confusableMatrix);
 
@@ -2142,230 +2321,365 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
                 ${ex2HTML}
                 ${ex3HTML}
             </div>
-            ${isSearchResult ? `<button class="primary" style="width:100%; margin-top:12px;" onclick="addCurrentToList()">➕ 保存至我的單字庫</button>` : ''}
+            ${isSearchResult ? `
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+                <select id="saveCategorySelect" style="flex:1; margin:0;">
+                    <option value="due" selected>🎯 歸類至：待複習</option>
+                    <option value="learning">📖 歸類至：學習中</option>
+                    <option value="mastered">🏆 歸類至：已精通</option>
+                </select>
+                <button class="primary" style="flex:2; margin:0;" onclick="addCurrentToList()">➕ 保存至我的單字庫</button>
+            </div>
+            ` : ''}
         </div>
     `;
 }
 
-async function addCurrentToList() {
-    if (!currentResultData) return;
-    currentResultData = normalizeWordData(currentResultData);
-    currentResultData.word = sanitizeWord(currentResultData.word);
+function renderWordCardHTML(item, isOpen = false) {
+    item = normalizeWordData(item);
+    const cleanWord = sanitizeWord(item.word);
+    const displayTime = getCreatedTime(item);
+    const timeString = formatTimeDisplay(displayTime);
 
-    const words = getWords();
-    const existingIndex = words.findIndex(w => w.word.toLowerCase() === currentResultData.word.toLowerCase());
-    const now = Date.now();
+    const posTag = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
+    const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
+    const tagBadge = renderTagBadge(item.tag);
+    const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
+    const verbTensesHTML = renderVerbTensesBox(item.verbTenses, item);
 
-    if (existingIndex !== -1) {
-        if (confirm(`單字「${words[existingIndex].word}」已存在，要覆蓋更新內容嗎？`)) {
-            words[existingIndex] = { 
-                ...words[existingIndex], 
-                ...currentResultData, 
-                createdAt: words[existingIndex].createdAt || words[existingIndex].updatedAt || now,
-                updatedAt: now,
-                isDeleted: false 
-            };
-            saveWords(words);
-            alert(`✅ 已成功覆蓋更新單字內容！`);
+    const cardId = 'word_card_' + encodeURIComponent(cleanWord.toLowerCase());
+    const quizHTML = renderQuizBox(item.part5Quiz, cardId);
+    const matrixHTML = renderConfusableMatrix(item.confusableMatrix);
+
+    const cat = item.category || 'due';
+
+    const derivativesList = formatChipsHTML(item.derivatives, 'highlight-chip');
+    const collocationsList = formatChipsHTML(item.collocations, 'highlight-chip');
+    const bizCollocationsList = formatChipsHTML(item.businessCollocations, 'highlight-chip-success');
+    const prepList = formatChipsHTML(item.prepCollocations, 'highlight-chip');
+
+    const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : (item.synonyms || '-');
+    const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : (item.antonyms || '-');
+
+    const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1, 1);
+    const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2, 2);
+    const ex3HTML = formatExampleHTML(item.example3_en, item.example3_zh, null, 3);
+    const formHTML = renderGrammaticalForm(item.grammaticalForm);
+    const safeWord = escapeJsStr(cleanWord);
+
+    return `
+        <div class="word-card" id="${cardId}">
+            <div class="word-card-top">
+                <div style="font-size:var(--font-size-xs); color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <span>📅 ${timeString}</span>
+                </div>
+                <div class="word-actions">
+                    <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
+                    <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
+                    <button class="primary btn-sm" onclick="updateSingleWordByWord('${safeWord}', event)">✨ 重整</button>
+                    <button class="danger btn-sm" onclick="deleteWordByWord('${safeWord}')">🗑️ 刪除</button>
+                </div>
+            </div>
+
+            <div class="category-select-box">
+                <span>📁 自訂分類：</span>
+                <select onchange="setWordCategory('${safeWord}', this.value)">
+                    <option value="due" ${cat === 'due' ? 'selected' : ''}>🎯 待複習</option>
+                    <option value="learning" ${cat === 'learning' ? 'selected' : ''}>📖 學習中</option>
+                    <option value="mastered" ${cat === 'mastered' ? 'selected' : ''}>🏆 已精通</option>
+                </select>
+            </div>
+
+            <details ${isOpen ? 'open' : ''} style="margin-top:8px;">
+                <summary>
+                    ${cleanWord} ${posTag} ${phoneticText}
+                    <span class="zh-wrapper">
+                        <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️</button>
+                        <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:var(--font-size-body);">${renderChineseHTML(item, true)}</span>
+                    </span>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center;">
+                        ${tagBadge}
+                        ${targetScoreBadge}
+                    </div>
+                </summary>
+
+                <div class="detail-content">
+                    <div class="info-block">
+                        <div class="info-block-title">📌 核心文法與記憶口訣</div>
+                        ${verbTensesHTML}
+                        <div class="info-grid">
+                            <div class="info-item"><strong>詞性獨立翻譯：</strong>${renderChineseHTML(item, false)}</div>
+                            <div class="info-item"><strong>大小寫差異分析：</strong><span>${item.caseAnalysis || '普通單字，無大小寫語意差異'}</span></div>
+                            <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
+                            <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
+                            <div class="info-item"><strong>重音/連音提示：</strong>${item.pronunciationTip || '-'}</div>
+                            <div class="info-item">
+                                ${(item.mnemonicTip && item.mnemonicTip !== '-') ? `<div class="highlight-tip-box">💡 <strong>記憶口訣：</strong>${item.mnemonicTip}</div>` : '<strong>記憶口訣：</strong>-'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-block">
+                        <div class="info-block-title">💼 多益考點與職場情境</div>
+                        <div class="info-grid">
+                            <div class="info-item"><strong>多益 7 大 Part 定位：</strong>${(item.toeicPartFocus && item.toeicPartFocus !== '-') ? `<span class="highlight-tag-accent">${item.toeicPartFocus}</span>` : '-'}</div>
+                            <div class="info-item"><strong>介系詞搭配：</strong><div style="margin-top:2px;">${prepList}</div></div>
+                            <div class="info-item"><strong>商務高頻連體搭配：</strong><div style="margin-top:2px;">${bizCollocationsList}</div></div>
+                            <div class="info-item"><strong>多益核心主題：</strong>${item.toeic || '-'}</div>
+                            <div class="info-item"><strong>商務職場句型：</strong>${item.businessContext || '-'}</div>
+                            <div class="info-item"><strong>Email/廣告情境：</strong>${item.businessEmailContext || '-'}</div>
+                            <div class="info-item">
+                                ${(item.listeningDistractors && item.listeningDistractors !== '-') ? `<div class="highlight-alert-box">🎧 <strong>聽力陷阱提示：</strong>${item.listeningDistractors}</div>` : '<strong>聽力干擾陷阱：</strong>-'}
+                            </div>
+                            <div class="info-item">
+                                ${(item.grammarTraps && item.grammarTraps !== '-') ? `<div class="highlight-alert-box">⚠️ <strong>文法陷阱提醒：</strong>${item.grammarTraps}</div>` : '<strong>文法陷阱提醒：</strong>-'}
+                            </div>
+                            <div class="info-item"><strong>Part 7 同義替換：</strong><span style="color:#2a593e; font-weight:600;">${item.part7Synonyms || '-'}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="info-block">
+                        <div class="info-block-title">🌱 詞彙擴充與同反義字</div>
+                        <div class="info-grid">
+                            <div class="info-item"><strong>衍生字詞：</strong><div style="margin-top:2px;">${derivativesList}</div></div>
+                            <div class="info-item"><strong>常見搭配詞：</strong><div style="margin-top:2px;">${collocationsList}</div></div>
+                            <div class="info-item"><strong>同義 / 反義：</strong>同: ${synonymsList} ｜ 反: ${antonymsList}</div>
+                            <div class="info-item"><strong>英美發音拼寫差異：</strong>${item.ukUsVariation || '無差異'}</div>
+                        </div>
+                    </div>
+
+                    ${matrixHTML}
+                    ${quizHTML}
+                    ${ex1HTML}
+                    ${ex2HTML}
+                    ${ex3HTML}
+                </div>
+            </details>
+        </div>
+    `;
+}
+
+function renderWordList() {
+    const listDiv = document.getElementById("wordList");
+    if (!listDiv) return;
+
+    const openCardIds = new Set();
+    listDiv.querySelectorAll('.word-card').forEach(card => {
+        const details = card.querySelector('details');
+        if (details && details.open) {
+            openCardIds.add(card.id);
         }
+    });
+
+    const words = getWords().filter(w => !w.isDeleted);
+    let filteredWords = words;
+
+    if (searchKeyword) {
+        const kw = searchKeyword.toLowerCase();
+        filteredWords = filteredWords.filter(w => 
+            w.word.toLowerCase().includes(kw) || 
+            (w.chinese && JSON.stringify(w.chinese).toLowerCase().includes(kw))
+        );
+    }
+
+    if (filterDueOnly) {
+        filteredWords = filteredWords.filter(w => (w.category || 'due') === 'due');
+    }
+
+    const sortType = document.getElementById("sortSelect") ? document.getElementById("sortSelect").value : 'time-desc';
+    filteredWords.sort((a, b) => {
+        if (sortType === 'time-desc') return getItemTime(b) - getItemTime(a);
+        if (sortType === 'time-asc') return getItemTime(a) - getItemTime(b);
+        if (sortType === 'alpha-asc') return a.word.localeCompare(b.word);
+        if (sortType === 'alpha-desc') return b.word.localeCompare(a.word);
+        if (sortType === 'category-asc') {
+            const order = { 'due': 1, 'learning': 2, 'mastered': 3 };
+            return (order[a.category || 'due'] || 1) - (order[b.category || 'due'] || 1);
+        }
+        return 0;
+    });
+
+    if (filteredWords.length === 0) {
+        listDiv.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">📭 尚無相關單字資料</div>`;
         return;
     }
 
-    const newWordObj = {
-        ...currentResultData,
-        mastery: 0,
-        nextReviewDate: now,
-        lastReviewedAt: 0,
-        createdAt: now,
-        updatedAt: now,
-        isDeleted: false
-    };
-
-    words.unshift(newWordObj);
-    saveWords(words);
-    alert("✅ 已成功儲存至單字庫！");
+    listDiv.innerHTML = filteredWords.map(w => {
+        const cleanWord = sanitizeWord(w.word);
+        const cardId = 'word_card_' + encodeURIComponent(cleanWord.toLowerCase());
+        const isOpen = openCardIds.has(cardId);
+        return renderWordCardHTML(w, isOpen);
+    }).join('');
 }
 
-function markMasteryByWord(wordStr, isRemembered) {
-    const words = getWords();
-    const index = words.findIndex(w => w.word.toLowerCase() === wordStr.toLowerCase());
-    if (index === -1) return;
-
-    let currentLevel = words[index].mastery || 0;
-    currentLevel = isRemembered ? Math.min(currentLevel + 1, 5) : 0;
-
-    const intervalDays = SRS_INTERVALS[currentLevel];
-    const now = Date.now();
-    const nextDate = isRemembered ? (now + intervalDays * 24 * 60 * 60 * 1000) : now;
-
-    words[index] = { ...words[index], mastery: currentLevel, nextReviewDate: nextDate, lastReviewedAt: now, updatedAt: now };
-    saveWords(words);
+function handleFilterInput() {
+    const val = document.getElementById("filterInput").value;
+    searchKeyword = val.trim();
+    const clearBtn = document.getElementById("clearSearchBtn");
+    if (clearBtn) clearBtn.style.display = searchKeyword ? "block" : "none";
+    renderWordList();
 }
 
-function deleteWordByWord(wordStr) {
-    const words = getWords();
-    const index = words.findIndex(w => w.word.toLowerCase() === wordStr.toLowerCase());
-    if (index === -1) return;
-
-    if (confirm(`確定要將單字「${words[index].word}」刪除嗎？`)) {
-        words[index] = { ...words[index], isDeleted: true, updatedAt: Date.now() };
-        saveWords(words);
-    }
+function clearSearchFilter() {
+    const input = document.getElementById("filterInput");
+    if (input) input.value = "";
+    searchKeyword = "";
+    const clearBtn = document.getElementById("clearSearchBtn");
+    if (clearBtn) clearBtn.style.display = "none";
+    renderWordList();
 }
 
 function toggleDueOnlyFilter() {
     filterDueOnly = !filterDueOnly;
     const btn = document.getElementById("filterDueBtn");
-    if (filterDueOnly) {
-        btn.classList.remove("warning");
-        btn.classList.add("primary");
-        btn.innerHTML = `🎯 顯示全部`;
-    } else {
-        btn.classList.remove("primary");
-        btn.classList.add("warning");
-        btn.innerHTML = `🎯 待複習 (<span id="dueCount">${document.getElementById("statDue") ? document.getElementById("statDue").textContent : 0}</span>)`;
+    if (btn) {
+        if (filterDueOnly) {
+            btn.style.outline = "2px solid var(--color-warning)";
+            btn.style.opacity = "0.9";
+        } else {
+            btn.style.outline = "none";
+            btn.style.opacity = "1";
+        }
     }
     renderWordList();
 }
 
-function handleFilterInput() {
-    const filterInput = document.getElementById("filterInput");
-    const clearBtn = document.getElementById("clearSearchBtn");
-    if (filterInput && clearBtn) {
-        clearBtn.style.display = filterInput.value.trim() ? "block" : "none";
-    }
-    renderWordList();
-}
+function addCurrentToList() {
+    if (!currentResultData) return alert("尚無可儲存的分析結果！");
+    const categorySelect = document.getElementById("saveCategorySelect");
+    const chosenCat = categorySelect ? categorySelect.value : 'due';
 
-function clearSearchFilter() {
-    const filterInput = document.getElementById("filterInput");
-    const clearBtn = document.getElementById("clearSearchBtn");
-    if (filterInput) filterInput.value = "";
-    if (clearBtn) clearBtn.style.display = "none";
-    renderWordList();
-}
-
-async function updateSingleWordByWord(wordStr, btnEvt) {
     const words = getWords();
-    const index = words.findIndex(w => w.word.toLowerCase() === wordStr.toLowerCase());
-    if (index === -1) return;
+    const cleanWord = sanitizeWord(currentResultData.word);
+    const lower = cleanWord.toLowerCase();
 
-    const cleanWord = sanitizeWord(wordStr);
-    if (!confirm(`確定重新分析「${cleanWord}」並產生最新多益考點與題目嗎？`)) return;
+    const existingIndex = words.findIndex(w => w.word.toLowerCase() === lower);
+    const now = Date.now();
 
-    const btn = btnEvt ? btnEvt.target : null;
-    let oldBtnText = "";
-    if (btn) { oldBtnText = btn.innerHTML; btn.disabled = true; btn.innerHTML = "⏳ 分析中..."; }
+    let newEntry = {
+        ...currentResultData,
+        word: cleanWord,
+        category: chosenCat,
+        updatedAt: now
+    };
 
-    const targetCardId = 'word_card_' + encodeURIComponent(cleanWord.toLowerCase());
+    if (existingIndex >= 0) {
+        newEntry.createdAt = getCreatedTime(words[existingIndex]) || now;
+        words[existingIndex] = newEntry;
+    } else {
+        newEntry.createdAt = now;
+        words.unshift(newEntry);
+    }
+
+    saveWords(words, true);
+    alert(`✅ 已將「${cleanWord}」加入單字庫！`);
+}
+
+function setWordCategory(wordStr, newCat) {
+    const words = getWords();
+    const lower = wordStr.toLowerCase();
+    const item = words.find(w => w.word.toLowerCase() === lower);
+    if (item) {
+        item.category = newCat;
+        item.updatedAt = Date.now();
+        saveWords(words, true);
+    }
+}
+
+function deleteWordByWord(wordStr) {
+    if (!confirm(`確定要將「${wordStr}」從單字庫中刪除嗎？`)) return;
+    const words = getWords();
+    const lower = wordStr.toLowerCase();
+    const item = words.find(w => w.word.toLowerCase() === lower);
+    if (item) {
+        item.isDeleted = true;
+        item.updatedAt = Date.now();
+        saveWords(words, true);
+    }
+}
+
+async function updateSingleWordByWord(wordStr, event) {
+    if (event) event.stopPropagation();
+    const btn = event ? event.target : null;
+    if (btn) btn.disabled = true;
 
     try {
-        const { data } = await analyzeWordWithAI(cleanWord);
-        const normalizedData = normalizeWordData(data);
+        const { data } = await analyzeWordWithAI(wordStr, () => {});
+        const words = getWords();
+        const lower = wordStr.toLowerCase();
+        const existingIndex = words.findIndex(w => w.word.toLowerCase() === lower);
         const now = Date.now();
-        const originalCreatedAt = words[index].createdAt || words[index].updatedAt || now;
-        words[index] = { 
-            ...words[index], 
-            ...normalizedData, 
-            createdAt: originalCreatedAt, 
-            updatedAt: now 
-        };
-        saveWords(words);
-        
-        // 自動展開該單字並平滑滾動至該單字位置
-        setTimeout(() => {
-            const cardEl = document.getElementById(targetCardId);
-            if (cardEl) {
-                const detailsEl = cardEl.querySelector('details');
-                if (detailsEl) detailsEl.open = true;
-                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }, 50);
 
-        alert(`✅ 已成功重整並更新「${cleanWord}」的完整資料！`);
+        if (existingIndex >= 0) {
+            const existing = words[existingIndex];
+            words[existingIndex] = {
+                ...data,
+                word: sanitizeWord(data.word),
+                category: existing.category || 'due',
+                createdAt: getCreatedTime(existing) || now,
+                updatedAt: now,
+                isDeleted: false
+            };
+            saveWords(words, true);
+            alert(`✨ 「${wordStr}」已重整並更新至最新 AI 資料！`);
+        }
     } catch (err) {
         alert(`❌ 重整失敗：${err.message}`);
     } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = oldBtnText; }
+        if (btn) btn.disabled = false;
     }
 }
 
-function isWordIncomplete(item) {
-    if (!item) return true;
-    const isEmptyStr = (val) => !val || typeof val !== 'string' || val.trim() === '' || val.trim() === '-';
-    const isEmptyArr = (val) => !Array.isArray(val) || val.length === 0;
+async function upgradeOldWords(event) {
+    const words = getWords().filter(w => !w.isDeleted);
+    const incompleteWords = words.filter(w => isWordIncomplete(w));
 
-    const norm = normalizeWordData(item);
+    if (incompleteWords.length === 0) {
+        return alert("🎉 所有單字皆已具備完整 AI 欄位與 Part 5 題目，無需補齊！");
+    }
 
-    return (
-        isEmptyStr(norm.partOfSpeech) ||
-        isEmptyStr(norm.phonetic) ||
-        isEmptyStr(norm.tag) ||
-        isEmptyStr(norm.businessEmailContext) ||
-        isEmptyStr(norm.toeicPartFocus) ||
-        !norm.part5Quiz ||
-        isEmptyArr(norm.prepCollocations) ||
-        !norm.posTranslations ||
-        (typeof norm.posTranslations === 'object' && Object.keys(norm.posTranslations).length === 0)
-    );
-}
+    if (!confirm(`發現 ${incompleteWords.length} 個需要補齊詳細 AI 資料的單字，是否開始自動補齊？`)) return;
 
-async function upgradeOldWords(evt) {
-    const words = getWords();
-    const outdatedIndices = [];
-    words.forEach((item, index) => {
-        if (!item.isDeleted && isWordIncomplete(item)) outdatedIndices.push(index);
-    });
-
-    if (outdatedIndices.length === 0) return alert("🎉 所有單字皆已有完整多益題與高級考點！");
-    if (!confirm(`找到 ${outdatedIndices.length} 個待補齊單字，開始進行升級補齊？`)) return;
+    const btn = event ? event.target : null;
+    if (btn) btn.disabled = true;
 
     let successCount = 0;
-    const upgradeBtn = document.getElementById("upgradeBtn");
-    if (upgradeBtn) upgradeBtn.disabled = true;
-
-    for (let i = 0; i < outdatedIndices.length; i++) {
-        const idx = outdatedIndices[i];
-        const item = words[idx];
-        const cleanWord = sanitizeWord(item.word);
-
-        if (upgradeBtn) upgradeBtn.innerHTML = `⏳ 補齊中 (${i + 1}/${outdatedIndices.length})`;
-
+    for (let i = 0; i < incompleteWords.length; i++) {
+        const item = incompleteWords[i];
         try {
-            if (i > 0) await new Promise(r => setTimeout(r, 1000));
-            const { data } = await analyzeWordWithAI(cleanWord);
-            const normalizedData = normalizeWordData(data);
-            const now = Date.now();
-            const originalCreatedAt = item.createdAt || item.updatedAt || now;
-            words[idx] = { 
-                ...item, 
-                ...normalizedData, 
-                createdAt: originalCreatedAt, 
-                updatedAt: now 
-            };
-            successCount++;
-            saveWords(words, false);
-        } catch (err) {
-            console.error(`補齊 「${cleanWord}」 失敗:`, err);
+            const { data } = await analyzeWordWithAI(item.word, () => {});
+            const allWords = getWords();
+            const idx = allWords.findIndex(w => w.word.toLowerCase() === item.word.toLowerCase());
+            if (idx >= 0) {
+                allWords[idx] = {
+                    ...data,
+                    word: sanitizeWord(data.word),
+                    category: allWords[idx].category || 'due',
+                    createdAt: getCreatedTime(allWords[idx]) || Date.now(),
+                    updatedAt: Date.now()
+                };
+                saveWords(allWords, false);
+                successCount++;
+            }
+        } catch (e) {
+            console.warn(`補齊 ${item.word} 失敗`, e);
         }
     }
 
-    if (upgradeBtn) { upgradeBtn.disabled = false; upgradeBtn.innerHTML = "⚡ 補齊"; }
-    await performFullSync(false);
-    alert(`🎉 補全作業完成！成功補齊 ${successCount} / ${outdatedIndices.length} 個單字。`);
+    performFullSync(false);
+    alert(`⚡ 完成補齊！共成功更新 ${successCount} 個單字。`);
+    if (btn) btn.disabled = false;
 }
 
 function exportData() {
     const words = getWords().filter(w => !w.isDeleted);
-    if (words.length === 0) return alert("目前尚無可匯出的單字資料！");
-
-    const blob = new Blob([JSON.stringify(words, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `toeic_vocab_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(words, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `toeic_vocab_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
 }
 
 function importData(event) {
@@ -2375,13 +2689,13 @@ function importData(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const importedWords = safeParseJSON(e.target.result);
-            if (!Array.isArray(importedWords)) throw new Error("無效的 JSON 陣列格式");
+            const imported = safeParseJSON(e.target.result);
+            if (!Array.isArray(imported)) throw new Error("匯入檔案格式不符（須為 JSON 陣列）");
 
             const localWords = getWords();
-            const merged = mergeDatasets(localWords, importedWords);
+            const merged = mergeDatasets(localWords, imported);
             saveWords(merged, true);
-            alert(`✅ 成功匯入並合併 ${importedWords.length} 個單字！`);
+            alert(`📥 匯入成功！共匯入/合併 ${imported.length} 個單字。`);
         } catch (err) {
             alert(`❌ 匯入失敗：${err.message}`);
         }
@@ -2390,222 +2704,112 @@ function importData(event) {
     event.target.value = "";
 }
 
-function renderWordList() {
-    // 紀錄目前已展開的卡片 ID，防止繪製時被關閉
+function showMainPage() {
+    document.getElementById("mainPage").style.display = "block";
+    document.getElementById("categoryPage").style.display = "none";
+    refreshActiveView();
+}
+
+function openCategoryPage(cat = 'due') {
+    currentCategory = cat;
+    document.getElementById("mainPage").style.display = "none";
+    document.getElementById("categoryPage").style.display = "block";
+    updateCategoryTabsUI();
+    renderCategoryWordList();
+}
+
+function switchCategory(cat) {
+    currentCategory = cat;
+    updateCategoryTabsUI();
+    renderCategoryWordList();
+}
+
+function updateCategoryTabsUI() {
+    const titles = {
+        'due': '🎯 待複習單字庫',
+        'learning': '📖 學習中單字庫',
+        'mastered': '🏆 已精通單字庫'
+    };
+    const titleEl = document.getElementById("categoryPageTitle");
+    if (titleEl) titleEl.innerHTML = titles[currentCategory] || '📂 分類單字庫';
+
+    ['due', 'learning', 'mastered'].forEach(c => {
+        const tab = document.getElementById(`catTab${c.charAt(0).toUpperCase() + c.slice(1)}`);
+        if (tab) {
+            if (c === currentCategory) {
+                tab.className = 'btn-sm primary';
+            } else {
+                tab.className = 'btn-sm secondary';
+            }
+        }
+    });
+}
+
+function handleCatFilterInput() {
+    const val = document.getElementById("catFilterInput").value;
+    catSearchKeyword = val.trim();
+    const clearBtn = document.getElementById("catClearSearchBtn");
+    if (clearBtn) clearBtn.style.display = catSearchKeyword ? "block" : "none";
+    renderCategoryWordList();
+}
+
+function clearCatSearchFilter() {
+    const input = document.getElementById("catFilterInput");
+    if (input) input.value = "";
+    catSearchKeyword = "";
+    const clearBtn = document.getElementById("catClearSearchBtn");
+    if (clearBtn) clearBtn.style.display = "none";
+    renderCategoryWordList();
+}
+
+function renderCategoryWordList() {
+    const listDiv = document.getElementById("categoryWordList");
+    if (!listDiv) return;
+
     const openCardIds = new Set();
-    document.querySelectorAll('#wordList .word-card').forEach(card => {
+    listDiv.querySelectorAll('.word-card').forEach(card => {
         const details = card.querySelector('details');
         if (details && details.open) {
             openCardIds.add(card.id);
         }
     });
 
-    let allWords = getWords();
-    let activeWords = allWords.filter(item => !item.isDeleted);
+    const words = getWords().filter(w => !w.isDeleted && (w.category || 'due') === currentCategory);
+    let filteredWords = words;
 
-    const now = Date.now();
-    const filterText = document.getElementById("filterInput") ? document.getElementById("filterInput").value.toLowerCase().trim() : "";
-    const sortType = document.getElementById("sortSelect") ? document.getElementById("sortSelect").value : "time-desc";
-    const wordListDiv = document.getElementById("wordList");
-    const localCountSpan = document.getElementById("localWordCount");
-    const dueCountSpan = document.getElementById("dueCount");
+    if (catSearchKeyword) {
+        const kw = catSearchKeyword.toLowerCase();
+        filteredWords = filteredWords.filter(w => 
+            w.word.toLowerCase().includes(kw) || 
+            (w.chinese && JSON.stringify(w.chinese).toLowerCase().includes(kw))
+        );
+    }
 
-    if (localCountSpan) localCountSpan.textContent = activeWords.length;
-    updateSyncStatusDisplay('normal');
-
-    const dueWordsList = activeWords.filter(item => !item.nextReviewDate || item.nextReviewDate <= now);
-    const learningWords = activeWords.filter(item => (item.mastery || 0) > 0 && (item.mastery || 0) < 5);
-    const masteredWords = activeWords.filter(item => (item.mastery || 0) === 5);
-
-    if (dueCountSpan) dueCountSpan.textContent = dueWordsList.length;
-
-    const statDue = document.getElementById("statDue");
-    const statLearning = document.getElementById("statLearning");
-    const statMastered = document.getElementById("statMastered");
-    if (statDue) statDue.textContent = dueWordsList.length;
-    if (statLearning) statLearning.textContent = learningWords.length;
-    if (statMastered) statMastered.textContent = masteredWords.length;
-
-    let filteredWords = activeWords.filter(item => {
-        item = normalizeWordData(item);
-        const chineseStr = typeof item.chinese === 'string' ? item.chinese : JSON.stringify(item.chinese || '');
-        const posTransStr = item.posTranslations ? JSON.stringify(item.posTranslations) : '';
-        const matchesQuery = item.word.toLowerCase().includes(filterText) || 
-                            chineseStr.toLowerCase().includes(filterText) ||
-                            posTransStr.toLowerCase().includes(filterText) ||
-                            (item.tag && item.tag.toLowerCase().includes(filterText));
-        if (filterDueOnly) return matchesQuery && (!item.nextReviewDate || item.nextReviewDate <= now);
-        return matchesQuery;
-    });
-
+    const sortType = document.getElementById("catSortSelect") ? document.getElementById("catSortSelect").value : 'time-desc';
     filteredWords.sort((a, b) => {
-        const timeA = getCreatedTime(a), timeB = getCreatedTime(b);
-        const wordA = a.word.toLowerCase(), wordB = b.word.toLowerCase();
-        const dueA = !a.nextReviewDate || a.nextReviewDate <= now;
-        const dueB = !b.nextReviewDate || b.nextReviewDate <= now;
-        const levelA = a.mastery || 0, levelB = b.mastery || 0;
-
-        if (sortType === "srs-due") {
-            if (dueA && !dueB) return -1;
-            if (!dueA && dueB) return 1;
-            return (a.nextReviewDate || 0) - (b.nextReviewDate || 0);
-        }
-        if (sortType === "srs-level-asc") return levelA - levelB;
-        if (sortType === "srs-level-desc") return levelB - levelA;
-        if (sortType === "time-desc") return timeB - timeA;
-        if (sortType === "time-asc") return timeA - timeB;
-        if (sortType === "alpha-asc") return wordA.localeCompare(wordB);
-        if (sortType === "alpha-desc") return wordB.localeCompare(wordA);
+        if (sortType === 'time-desc') return getItemTime(b) - getItemTime(a);
+        if (sortType === 'time-asc') return getItemTime(a) - getItemTime(b);
+        if (sortType === 'alpha-asc') return a.word.localeCompare(b.word);
+        if (sortType === 'alpha-desc') return b.word.localeCompare(a.word);
         return 0;
     });
 
     if (filteredWords.length === 0) {
-        if (filterDueOnly) {
-            wordListDiv.innerHTML = "<p style='color:#2d583e; font-weight:600; padding:12px; background:var(--color-success-light); border-radius:var(--radius-sm); text-align:center;'>🎉 目前沒有需要複習的單字！</p>";
-        } else {
-            wordListDiv.innerHTML = filterText ? "<p style='color:var(--text-muted); text-align:center; padding:12px;'>沒有符合條件的單字。</p>" : "<p style='color:var(--text-muted); text-align:center; padding:12px;'>目前尚無儲存的單字。</p>";
-        }
+        listDiv.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">📭 此分類下尚無單字</div>`;
         return;
     }
 
-    wordListDiv.innerHTML = filteredWords.map((item) => {
-        item = normalizeWordData(item);
-        const cleanWord = sanitizeWord(item.word);
-        const displayTime = getCreatedTime(item);
-        const timeString = displayTime ? new Date(displayTime).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '無紀錄';
-
-        const posTag = item.partOfSpeech ? `<span class="pos-tag">(${item.partOfSpeech})</span>` : '';
-        const phoneticText = item.phonetic ? `<span class="phonetic-tag">[${item.phonetic}]</span>` : '';
-        const tagBadge = renderTagBadge(item.tag);
-        const targetScoreBadge = renderTargetScoreBadge(item.targetScore);
-        const verbTensesHTML = renderVerbTensesBox(item.verbTenses);
-
+    listDiv.innerHTML = filteredWords.map(w => {
+        const cleanWord = sanitizeWord(w.word);
         const cardId = 'word_card_' + encodeURIComponent(cleanWord.toLowerCase());
-        const quizHTML = renderQuizBox(item.part5Quiz, cardId);
-        const matrixHTML = renderConfusableMatrix(item.confusableMatrix);
-
-        const level = item.mastery || 0;
-        const stars = "★".repeat(level) + "☆".repeat(5 - level);
-        const isDue = !item.nextReviewDate || item.nextReviewDate <= now;
-        
-        let dueStatusHTML = isDue ? `<span class="srs-due-tag">🎯 待複習</span>` : `<span class="srs-ok-tag">⏳ ${new Date(item.nextReviewDate).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' })}</span>`;
-
-        const derivativesList = formatChipsHTML(item.derivatives, 'highlight-chip');
-        const collocationsList = formatChipsHTML(item.collocations, 'highlight-chip');
-        const bizCollocationsList = formatChipsHTML(item.businessCollocations, 'highlight-chip-success');
-        const prepList = formatChipsHTML(item.prepCollocations, 'highlight-chip');
-
-        const synonymsList = Array.isArray(item.synonyms) && item.synonyms.length ? item.synonyms.join(", ") : (item.synonyms || '-');
-        const antonymsList = Array.isArray(item.antonyms) && item.antonyms.length ? item.antonyms.join(", ") : (item.antonyms || '-');
-
-        const ex1HTML = formatExampleHTML(item.example1_en, item.example1_zh, item.example1, 1);
-        const ex2HTML = formatExampleHTML(item.example2_en, item.example2_zh, item.example2, 2);
-        const ex3HTML = formatExampleHTML(item.example3_en, item.example3_zh, null, 3);
-        const formHTML = renderGrammaticalForm(item.grammaticalForm);
-        const safeWord = escapeJsStr(cleanWord);
-
-        return `
-            <div class="word-card" id="${cardId}">
-                <div class="word-card-top">
-                    <div style="font-size:var(--font-size-xs); color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                        <span>📅 ${timeString}</span>
-                        <span>Level ${level}</span>
-                    </div>
-                    <div class="word-actions">
-                        <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
-                        <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
-                        <button class="success btn-sm" onclick="markMasteryByWord('${safeWord}', true)">✅ 記得</button>
-                        <button class="danger btn-sm" onclick="markMasteryByWord('${safeWord}', false)">❌ 忘記</button>
-                        <button class="primary btn-sm" onclick="updateSingleWordByWord('${safeWord}', event)">✨ 重整</button>
-                        <button class="danger btn-sm" onclick="deleteWordByWord('${safeWord}')">🗑️ 刪除</button>
-                    </div>
-                </div>
-
-                <div class="srs-box">
-                    <span>熟練度 <span class="srs-star">${stars}</span></span>
-                    ${dueStatusHTML}
-                </div>
-
-                <details style="margin-top:8px;">
-                    <summary>
-                        ${cleanWord} ${posTag} ${phoneticText}
-                        <span class="zh-wrapper">
-                            <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️</button>
-                            <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:var(--font-size-body);">${renderChineseHTML(item, true)}</span>
-                        </span>
-                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center;">
-                            ${tagBadge}
-                            ${targetScoreBadge}
-                        </div>
-                    </summary>
-
-                    <div class="detail-content">
-                        <div class="info-block">
-                            <div class="info-block-title">📌 核心文法與記憶口訣</div>
-                            ${verbTensesHTML}
-                            <div class="info-grid">
-                                <div class="info-item"><strong>詞性獨立翻譯：</strong>${renderChineseHTML(item, false)}</div>
-                                <div class="info-item"><strong>大小寫差異分析：</strong><span>${item.caseAnalysis || '普通單字，無大小寫語意差異'}</span></div>
-                                <div class="info-item"><strong>詞性形態：</strong>${formHTML}</div>
-                                <div class="info-item"><strong>字根拆解：</strong>${item.rootAnalysis || '-'}</div>
-                                <div class="info-item"><strong>重音/連音提示：</strong>${item.pronunciationTip || '-'}</div>
-                                <div class="info-item">
-                                    ${(item.mnemonicTip && item.mnemonicTip !== '-') ? `<div class="highlight-tip-box">💡 <strong>記憶口訣：</strong>${item.mnemonicTip}</div>` : '<strong>記憶口訣：</strong>-'}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="info-block">
-                            <div class="info-block-title">💼 多益考點與職場情境</div>
-                            <div class="info-grid">
-                                <div class="info-item"><strong>多益 7 大 Part 定位：</strong>${(item.toeicPartFocus && item.toeicPartFocus !== '-') ? `<span class="highlight-tag-accent">${item.toeicPartFocus}</span>` : '-'}</div>
-                                <div class="info-item"><strong>介系詞搭配：</strong><div style="margin-top:2px;">${prepList}</div></div>
-                                <div class="info-item"><strong>商務高頻連體搭配：</strong><div style="margin-top:2px;">${bizCollocationsList}</div></div>
-                                <div class="info-item"><strong>多益核心主題：</strong>${item.toeic || '-'}</div>
-                                <div class="info-item"><strong>商務職場句型：</strong>${item.businessContext || '-'}</div>
-                                <div class="info-item"><strong>Email/廣告情境：</strong>${item.businessEmailContext || '-'}</div>
-                                <div class="info-item">
-                                    ${(item.listeningDistractors && item.listeningDistractors !== '-') ? `<div class="highlight-alert-box">🎧 <strong>聽力陷阱提示：</strong>${item.listeningDistractors}</div>` : '<strong>聽力干擾陷阱：</strong>-'}
-                                </div>
-                                <div class="info-item">
-                                    ${(item.grammarTraps && item.grammarTraps !== '-') ? `<div class="highlight-alert-box">⚠️ <strong>文法陷阱提醒：</strong>${item.grammarTraps}</div>` : '<strong>文法陷阱提醒：</strong>-'}
-                                </div>
-                                <div class="info-item"><strong>Part 7 同義替換：</strong><span style="color:#2a593e; font-weight:600;">${item.part7Synonyms || '-'}</span></div>
-                            </div>
-                        </div>
-
-                        <div class="info-block">
-                            <div class="info-block-title">🌱 詞彙擴充與同反義字</div>
-                            <div class="info-grid">
-                                <div class="info-item"><strong>衍生字詞：</strong><div style="margin-top:2px;">${derivativesList}</div></div>
-                                <div class="info-item"><strong>常見搭配詞：</strong><div style="margin-top:2px;">${collocationsList}</div></div>
-                                <div class="info-item"><strong>同義 / 反義：</strong>同: ${synonymsList} ｜ 反: ${antonymsList}</div>
-                                <div class="info-item"><strong>英美發音拼寫差異：</strong>${item.ukUsVariation || '無差異'}</div>
-                            </div>
-                        </div>
-
-                        ${matrixHTML}
-                        ${quizHTML}
-                        ${ex1HTML}
-                        ${ex2HTML}
-                        ${ex3HTML}
-                    </div>
-                </details>
-            </div>
-        `;
+        const isOpen = openCardIds.has(cardId);
+        return renderWordCardHTML(w, isOpen);
     }).join('');
-
-    openCardIds.forEach(id => {
-        const cardEl = document.getElementById(id);
-        if (cardEl) {
-            const detailsEl = cardEl.querySelector('details');
-            if (detailsEl) detailsEl.open = true;
-        }
-    });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-    renderWordList();
+document.addEventListener("DOMContentLoaded", () => {
+    refreshActiveView();
+    updateSyncStatusDisplay();
 });
 </script>
 </body>
