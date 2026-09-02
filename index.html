@@ -1048,6 +1048,119 @@ details summary {
     border: 2px dashed var(--border-dashed);
     border-radius: var(--radius-lg);
 }
+
+/* ===== v16 UI/UX enhancements ===== */
+.word-title-group { display:flex; flex-direction:column; gap:7px; min-width:0; }
+.word-title-line { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; }
+.word-title-text { font-size:1.48rem; line-height:1.25; font-weight:800; color:var(--color-primary); }
+details summary .word-title-text { font-size:1.42rem; }
+.main-zh-wrapper { display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin:0; width:100%; }
+.main-zh-wrapper .word-title-line { width:100%; }
+.main-zh-wrapper .zh-translation-line { width:100%; padding:7px 10px; background:#f7f5f0; border-left:3px solid var(--color-primary); border-radius:0 var(--radius-sm) var(--radius-sm) 0; font-size:.95rem; font-weight:500; color:var(--text-main); }
+.main-zh-wrapper .zh-toggle-btn { margin-left:2px; }
+.proficiency-picker { margin-top:10px; padding:10px; background:#f7f5f0; border:1.5px solid var(--border-color); border-radius:var(--radius-md); }
+.proficiency-label { font-size:var(--font-size-xs); font-weight:700; color:var(--text-muted); margin-bottom:7px; }
+.proficiency-options { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+.proficiency-btn { min-height:44px; padding:7px 5px; background:#fff; color:var(--text-muted); border:2px solid transparent; box-shadow:0 1px 4px rgba(50,40,30,.06); white-space:normal; line-height:1.2; }
+.proficiency-btn.is-active { color:#fff; transform:translateY(-1px); box-shadow:0 4px 10px rgba(50,40,30,.14); }
+.proficiency-btn.due.is-active { background:var(--color-warning); border-color:#7f5d36; }
+.proficiency-btn.learning.is-active { background:var(--color-primary); border-color:#344652; }
+.proficiency-btn.mastered.is-active { background:var(--color-success); border-color:#365845; }
+.fc-tools { background:rgba(255,255,255,.94); border:2px solid var(--border-dark); border-radius:var(--radius-md); padding:10px; margin-bottom:12px; box-shadow:var(--shadow-soft); }
+.fc-search-row { display:flex; gap:7px; }
+.fc-search-row input { margin:0; min-width:0; }
+.fc-search-row button { flex:0 0 auto; }
+.fc-action-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:7px; }
+.fc-action-row button { min-width:0; }
+.fc-ai-status { display:none; margin-top:8px; padding:7px 9px; border-radius:var(--radius-sm); background:var(--color-primary-light); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:600; }
+.fc-word-large { white-space:nowrap; word-break:normal; overflow-wrap:normal; max-width:100%; line-height:1.08; letter-spacing:-.02em; }
+.fc-front-meta { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:2px; }
+.fc-mini-badge { padding:3px 8px; border-radius:var(--radius-pill); background:#f2efe9; border:1px solid var(--border-color); color:var(--text-muted); font-size:var(--font-size-xs); font-weight:700; }
+.fc-extra-info { margin-top:10px; display:grid; gap:7px; }
+.fc-info-line { padding:8px 10px; background:#fff; border:1px solid var(--border-color); border-radius:var(--radius-sm); font-size:var(--font-size-sm); line-height:1.45; }
+.fc-status-row button { position:relative; border:2px solid transparent; opacity:.72; transition:all .18s ease; }
+.fc-status-row button.is-active { opacity:1; transform:translateY(-2px); box-shadow:0 5px 12px rgba(50,40,30,.18); }
+.fc-status-row button.is-active::after { content:'✓'; position:absolute; right:6px; top:4px; width:18px; height:18px; display:grid; place-items:center; border-radius:50%; background:#fff; color:var(--text-main); font-weight:900; font-size:11px; }
+.fc-status-row .due-status.is-active { background:var(--color-warning); color:#fff; border-color:#7f5d36; }
+.fc-status-row .learning-status.is-active { background:var(--color-primary); color:#fff; border-color:#344652; }
+.fc-status-row .mastered-status.is-active { background:var(--color-success); color:#fff; border-color:#365845; }
+@media (max-width: 520px) {
+  #flashcardPage { padding:4px; }
+  .fc-face { padding:18px; }
+  .fc-scene { min-height:430px; }
+  .fc-header { margin-bottom:10px; }
+  .fc-header button { padding-left:9px; padding-right:9px; }
+  .fc-search-row { display:grid; grid-template-columns:1fr auto; }
+  .word-title-text, details summary .word-title-text { font-size:1.32rem; }
+  .proficiency-btn { font-size:.73rem; padding:6px 3px; }
+  .main-zh-wrapper .zh-translation-line { font-size:.88rem; }
+}
+@media (min-width: 650px) {
+  .word-title-text { font-size:1.62rem; }
+  details summary .word-title-text { font-size:1.55rem; }
+  .fc-scene { min-height:500px; }
+}
+
+
+/* ===== v17 compact proficiency + richer flashcards ===== */
+.word-top-right { display:flex; flex-direction:column; align-items:flex-end; gap:7px; min-width:0; }
+.proficiency-picker { margin:0; padding:0; background:transparent; border:0; border-radius:0; }
+.proficiency-label { display:none; }
+.proficiency-options { display:flex; gap:5px; justify-content:flex-end; }
+.proficiency-btn { min-height:30px; padding:4px 9px; border-radius:var(--radius-pill); font-size:var(--font-size-xs); white-space:nowrap; line-height:1; box-shadow:none; background:#f2efe9; border:1.5px solid var(--border-color); }
+.proficiency-btn br { display:none; }
+.proficiency-btn.is-active { transform:none; box-shadow:0 2px 6px rgba(50,40,30,.13); }
+.fc-learning-points { display:grid; gap:7px; margin-top:12px; }
+.fc-learning-title { font-size:var(--font-size-sm); font-weight:800; color:var(--color-primary); display:flex; align-items:center; gap:5px; }
+.fc-point { background:#fff; border:1px solid var(--border-color); border-left:3px solid var(--color-primary); border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:8px 10px; font-size:var(--font-size-sm); line-height:1.45; }
+.fc-point strong { color:var(--color-primary); }
+.fc-quick-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.fc-quick-chip { background:var(--color-primary-light); color:var(--color-primary); border:1px solid #d2e0ea; border-radius:var(--radius-pill); padding:3px 8px; font-size:var(--font-size-xs); font-weight:700; }
+@media (max-width:649px) {
+  .word-card-top { gap:7px; }
+  .word-top-right { width:100%; align-items:stretch; }
+  .word-actions { width:100%; }
+  .proficiency-options { justify-content:stretch; }
+  .proficiency-btn { flex:1; padding:6px 4px; min-height:34px; }
+}
+
+
+/* ===== v18 inline summary + proficiency dropdown ===== */
+.word-card-top { margin-bottom:0; }
+.word-top-right { gap:0; }
+.proficiency-picker, .proficiency-options, .proficiency-btn { display:none !important; }
+.word-summary-layout { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:14px; }
+.word-summary-main { min-width:0; }
+.word-summary-main .main-zh-wrapper { display:inline-flex; width:auto; margin-left:0; vertical-align:middle; }
+.word-summary-main .word-title-line { display:inline-flex; width:auto; vertical-align:middle; }
+.word-summary-main .zh-translation-line { display:block; width:100%; margin-top:7px; }
+.word-summary-main .summary-badges { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; align-items:center; }
+.summary-proficiency { display:flex; align-items:center; gap:7px; align-self:center; padding:7px 9px; background:#f7f5f0; border:1.5px solid var(--border-color); border-radius:var(--radius-md); min-width:170px; }
+.summary-proficiency-label { color:var(--text-muted); font-size:var(--font-size-xs); font-weight:700; white-space:nowrap; }
+.summary-proficiency-select { width:auto; min-width:112px; min-height:34px; margin:0; padding:5px 30px 5px 9px; font-size:var(--font-size-sm); font-weight:700; background-color:#fff; }
+details > summary { display:block; }
+details > summary::marker { color:var(--color-primary); font-size:1rem; }
+@media (min-width:650px) {
+  .word-card-top { padding-bottom:9px; }
+  .word-summary-layout { margin-top:0; }
+}
+@media (max-width:649px) {
+  .word-card { padding:13px; }
+  .word-card-top { padding-bottom:9px; }
+  .word-top-right { width:100%; }
+  .word-actions { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .word-actions button { padding:6px 4px; font-size:.73rem; }
+  .word-summary-layout { grid-template-columns:1fr; gap:9px; }
+  .summary-proficiency { width:100%; justify-content:space-between; padding:7px 9px; }
+  .summary-proficiency-select { flex:1; max-width:190px; }
+  .word-summary-main .word-title-line { flex-wrap:wrap; }
+}
+@media (max-width:390px) {
+  .word-actions { grid-template-columns:repeat(2,1fr); }
+  .summary-proficiency { align-items:center; }
+  .word-title-text, details summary .word-title-text { font-size:1.24rem; }
+}
+
 </style>
 </head>
 
@@ -1228,6 +1341,17 @@ details summary {
             <button class="secondary btn-sm" onclick="shuffleFlashcards()" title="隨機打亂順序">🔀</button>
         </div>
         
+        <div class="fc-tools">
+            <div class="fc-search-row">
+                <input id="fcSearchInput" placeholder="輸入英文或中文，AI 搜尋單字..." onkeydown="handleFlashcardSearchKey(event)">
+                <button id="fcSearchBtn" class="primary btn-sm" onclick="flashcardAISearch()">🤖 AI 搜尋</button>
+            </div>
+            <div class="fc-action-row">
+                <button id="fcRefreshBtn" class="warning btn-sm" onclick="refreshCurrentFlashcardAI()">✨ AI 重整目前單字</button>
+                <button class="secondary btn-sm" onclick="focusFlashcardSearch()">🔎 搜尋其他單字</button>
+            </div>
+            <div id="fcAiStatus" class="fc-ai-status"></div>
+        </div>
         <div style="text-align:center; font-size:var(--font-size-sm); color:var(--text-muted); margin-bottom:8px;">
             進度：<span id="fcProgress">0 / 0</span>
         </div>
@@ -2432,11 +2556,10 @@ function renderCardHTML(item, isSearchResult = false, usedModel = "") {
     return `
         <div class="word-card" id="${cardId}">
             ${modelBadgeHTML}
-            <div style="font-size:1.25rem; font-weight:700; color:var(--color-primary); display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
-                <span>${displayWord}</span> ${posText} ${phoneticText}
-                <span class="zh-wrapper">
-                    <button class="zh-toggle-btn" onclick="toggleZh(this)">👁️</button>
-                    <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:var(--font-size-body);">${renderChineseHTML(item, true)}</span>
+            <div class="word-title-group">
+                <span class="zh-wrapper main-zh-wrapper">
+                    <span class="word-title-line"><span class="word-title-text">${displayWord}</span> ${posText} ${phoneticText}<button class="zh-toggle-btn" onclick="toggleZh(this)" title="顯示或隱藏中文翻譯">👁️</button></span>
+                    <span class="zh-text hidden zh-translation-line">${renderChineseHTML(item, true)}</span>
                 </span>
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; align-items:center;">
@@ -2547,34 +2670,35 @@ function renderWordCardHTML(item, isOpen = false) {
                 <div style="font-size:var(--font-size-xs); color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; gap:8px;">
                     <span>📅 ${timeString}</span>
                 </div>
-                <div class="word-actions">
-                    <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
-                    <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
-                    <button class="primary btn-sm" onclick="updateSingleWordByWord('${safeWord}', event)">✨ 重整</button>
-                    <button class="danger btn-sm" onclick="deleteWordByWord('${safeWord}')">🗑️ 刪除</button>
+                <div class="word-top-right">
+                    <div class="word-actions">
+                        <button class="voice-female btn-sm" onclick="speakText('${safeWord}', 'female')">👩 女聲</button>
+                        <button class="voice-male btn-sm" onclick="speakText('${safeWord}', 'male')">👨 男聲</button>
+                        <button class="primary btn-sm" onclick="updateSingleWordByWord('${safeWord}', event)">✨ 重整</button>
+                        <button class="danger btn-sm" onclick="deleteWordByWord('${safeWord}')">🗑️ 刪除</button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="category-select-box">
-                <span>📁 自訂分類：</span>
-                <select onchange="setWordCategory('${safeWord}', this.value)">
-                    <option value="due" ${cat === 'due' ? 'selected' : ''}>🎯 待複習</option>
-                    <option value="learning" ${cat === 'learning' ? 'selected' : ''}>📖 學習中</option>
-                    <option value="mastered" ${cat === 'mastered' ? 'selected' : ''}>🏆 已精通</option>
-                </select>
             </div>
 
             <details ${isOpen ? 'open' : ''} style="margin-top:8px;">
                 <summary>
-                    ${cleanWord} ${posTag} ${phoneticText}
-                    <span class="zh-wrapper">
-                        <button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);">👁️</button>
-                        <span class="zh-text hidden" style="font-weight:normal; color:var(--text-muted); font-size:var(--font-size-body);">${renderChineseHTML(item, true)}</span>
+                    <span class="word-summary-layout">
+                        <span class="word-summary-main">
+                            <span class="zh-wrapper main-zh-wrapper">
+                                <span class="word-title-line"><span class="word-title-text">${cleanWord}</span> ${posTag} ${phoneticText}<button class="zh-toggle-btn" onclick="event.stopPropagation(); toggleZh(this);" title="顯示或隱藏中文翻譯">👁️</button></span>
+                                <span class="zh-text hidden zh-translation-line">${renderChineseHTML(item, true)}</span>
+                            </span>
+                            <span class="summary-badges">${tagBadge}${targetScoreBadge}</span>
+                        </span>
+                        <span class="summary-proficiency" onclick="event.stopPropagation();">
+                            <span class="summary-proficiency-label">熟練度</span>
+                            <select class="summary-proficiency-select" aria-label="更改學習熟練度" onchange="setWordCategory('${safeWord}', this.value)">
+                                <option value="due" ${cat === 'due' ? 'selected' : ''}>🎯 待複習</option>
+                                <option value="learning" ${cat === 'learning' ? 'selected' : ''}>📖 學習中</option>
+                                <option value="mastered" ${cat === 'mastered' ? 'selected' : ''}>🏆 已精通</option>
+                            </select>
+                        </span>
                     </span>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center;">
-                        ${tagBadge}
-                        ${targetScoreBadge}
-                    </div>
                 </summary>
 
                 <div class="detail-content">
@@ -3039,6 +3163,87 @@ function loadFlashcardDecks(cat) {
     renderCurrentFlashcard();
 }
 
+function setFlashcardAIStatus(message, type = 'working') {
+    const el = document.getElementById('fcAiStatus');
+    if (!el) return;
+    el.style.display = message ? 'block' : 'none';
+    el.textContent = message || '';
+    el.style.background = type === 'error' ? 'var(--color-danger-light)' : (type === 'success' ? 'var(--color-success-light)' : 'var(--color-primary-light)');
+    el.style.color = type === 'error' ? 'var(--color-danger)' : (type === 'success' ? 'var(--color-success)' : 'var(--color-primary)');
+}
+function focusFlashcardSearch() {
+    const input = document.getElementById('fcSearchInput');
+    if (input) { input.focus(); input.select(); }
+}
+function handleFlashcardSearchKey(event) {
+    if (event.key === 'Enter') flashcardAISearch();
+}
+function upsertAIWordToDatabase(data, preferredCategory = 'due') {
+    const words = getWords();
+    const cleanWord = sanitizeWord(data.word);
+    const lower = cleanWord.toLowerCase();
+    const idx = words.findIndex(w => w.word.toLowerCase() === lower);
+    const now = Date.now();
+    const old = idx >= 0 ? words[idx] : null;
+    const entry = {
+        ...data,
+        word: cleanWord,
+        category: old ? (old.category || preferredCategory) : preferredCategory,
+        createdAt: old ? (getCreatedTime(old) || now) : now,
+        updatedAt: now,
+        isDeleted: false
+    };
+    if (idx >= 0) words[idx] = entry; else words.unshift(entry);
+    saveWords(words, true);
+    return entry;
+}
+async function flashcardAISearch() {
+    const input = document.getElementById('fcSearchInput');
+    const btn = document.getElementById('fcSearchBtn');
+    const query = input ? input.value.trim() : '';
+    if (!query) { setFlashcardAIStatus('請先輸入英文單字或中文。', 'error'); focusFlashcardSearch(); return; }
+    if (btn) btn.disabled = true;
+    setFlashcardAIStatus(`🤖 正在分析「${query}」...`);
+    try {
+        const { data } = await analyzeWordWithAI(query, (pct, msg) => setFlashcardAIStatus(`${pct}% ${msg}`));
+        const currentCat = document.getElementById('fcCategorySelect')?.value || 'all';
+        const entry = upsertAIWordToDatabase(data, currentCat === 'all' ? 'due' : currentCat);
+        const existingIdx = fcWords.findIndex(w => w.word.toLowerCase() === entry.word.toLowerCase());
+        if (existingIdx >= 0) { fcWords[existingIdx] = entry; fcCurrentIdx = existingIdx; }
+        else { fcWords.unshift(entry); fcCurrentIdx = 0; }
+        renderCurrentFlashcard();
+        setFlashcardAIStatus(`✅ 「${entry.word}」已完成 AI 分析，並同步更新一般網頁模式。`, 'success');
+    } catch (err) {
+        setFlashcardAIStatus(`❌ AI 搜尋失敗：${err.message}`, 'error');
+    } finally { if (btn) btn.disabled = false; }
+}
+async function refreshCurrentFlashcardAI() {
+    if (!fcWords.length) return setFlashcardAIStatus('目前沒有可重整的單字。', 'error');
+    const btn = document.getElementById('fcRefreshBtn');
+    const oldItem = fcWords[fcCurrentIdx];
+    const oldWord = oldItem.word;
+    if (btn) btn.disabled = true;
+    setFlashcardAIStatus(`✨ 正在重新分析「${oldWord}」...`);
+    try {
+        const { data } = await analyzeWordWithAI(oldWord, (pct, msg) => setFlashcardAIStatus(`${pct}% ${msg}`));
+        const entry = upsertAIWordToDatabase(data, oldItem.category || 'due');
+        fcWords[fcCurrentIdx] = entry;
+        renderCurrentFlashcard();
+        setFlashcardAIStatus(`✅ 「${entry.word}」已重整，字卡與一般網頁資料已同步。`, 'success');
+    } catch (err) {
+        setFlashcardAIStatus(`❌ 重整失敗：${err.message}`, 'error');
+    } finally { if (btn) btn.disabled = false; }
+}
+function fitFlashcardWord() {
+    const el = document.querySelector('.fc-word-large');
+    if (!el) return;
+    let size = Math.min(54, window.innerWidth < 520 ? 45 : 54);
+    el.style.fontSize = size + 'px';
+    while (el.scrollWidth > el.clientWidth && size > 15) {
+        size -= 1;
+        el.style.fontSize = size + 'px';
+    }
+}
 function renderCurrentFlashcard() {
     const container = document.getElementById("fcContainer");
     const progressSpan = document.getElementById("fcProgress");
@@ -3080,8 +3285,12 @@ function renderCurrentFlashcard() {
         <div class="fc-scene" onclick="flipFlashcard(event)">
             <div class="fc-card" id="fcCurrentCard">
                 <div class="fc-face fc-front">
-                    <div class="fc-word-large">${displayWord}</div>
-                    ${wordItem.partOfSpeech ? `<div style="font-size:var(--font-size-sm); color:var(--color-danger); font-style:italic; margin-bottom:8px;">${wordItem.partOfSpeech}</div>` : ''}
+                    <div class="fc-word-large" title="${displayWord}">${displayWord}</div>
+                    <div class="fc-front-meta">
+                        ${wordItem.partOfSpeech ? `<span class="fc-mini-badge">${wordItem.partOfSpeech}</span>` : ''}
+                        ${wordItem.tag ? `<span class="fc-mini-badge">🏷️ ${wordItem.tag}</span>` : ''}
+                        ${wordItem.targetScore ? `<span class="fc-mini-badge">🎯 ${wordItem.targetScore}</span>` : ''}
+                    </div>
                     <div class="fc-play-btn" onclick="event.stopPropagation(); speakText('${safeWord}', 'female');">🔊</div>
                     <div class="fc-hint">👉 點擊卡片翻面看解答</div>
                 </div>
@@ -3096,9 +3305,22 @@ function renderCurrentFlashcard() {
                         ${renderChineseHTML(wordItem, false)}
                     </div>
                     
+                    <div class="fc-quick-row">
+                        ${wordItem.targetScore ? `<span class="fc-quick-chip">🎯 ${wordItem.targetScore}</span>` : ''}
+                        ${wordItem.tag ? `<span class="fc-quick-chip">🏷️ ${wordItem.tag}</span>` : ''}
+                        ${wordItem.partOfSpeech ? `<span class="fc-quick-chip">🧩 ${wordItem.partOfSpeech}</span>` : ''}
+                    </div>
+                    <div class="fc-learning-points">
+                        <div class="fc-learning-title">📚 建議學習重點</div>
+                        ${(wordItem.mnemonicTip && wordItem.mnemonicTip !== '-') ? `<div class="fc-point">💡 <strong>記憶口訣：</strong>${wordItem.mnemonicTip}</div>` : ''}
+                        ${(wordItem.collocations && (Array.isArray(wordItem.collocations) ? wordItem.collocations.length : String(wordItem.collocations).trim())) ? `<div class="fc-point">🔗 <strong>常見搭配：</strong>${Array.isArray(wordItem.collocations) ? wordItem.collocations.slice(0,3).join('、') : wordItem.collocations}</div>` : ''}
+                        ${(wordItem.toeicPartFocus && wordItem.toeicPartFocus !== '-') ? `<div class="fc-point">🎯 <strong>多益考點：</strong>${wordItem.toeicPartFocus}</div>` : ''}
+                        ${(wordItem.grammarTraps && wordItem.grammarTraps !== '-') ? `<div class="fc-point">⚠️ <strong>文法提醒：</strong>${wordItem.grammarTraps}</div>` : ''}
+                        ${(wordItem.pronunciationTip && wordItem.pronunciationTip !== '-') ? `<div class="fc-point">🎧 <strong>發音重點：</strong>${wordItem.pronunciationTip}</div>` : ''}
+                        ${(wordItem.synonyms && (Array.isArray(wordItem.synonyms) ? wordItem.synonyms.length : String(wordItem.synonyms).trim())) ? `<div class="fc-point">🔄 <strong>同義替換：</strong>${Array.isArray(wordItem.synonyms) ? wordItem.synonyms.slice(0,3).join('、') : wordItem.synonyms}</div>` : ''}
+                    </div>
                     ${exHTML}
-                    
-                    <div class="fc-hint" style="text-align:center; margin-top:24px;">👉 點擊卡片翻回正面</div>
+                    <div class="fc-hint" style="text-align:center; margin-top:18px;">👉 點擊卡片翻回正面</div>
                 </div>
             </div>
         </div>
@@ -3108,12 +3330,13 @@ function renderCurrentFlashcard() {
             <button class="primary" onclick="nextFlashcard()" ${fcCurrentIdx === fcWords.length - 1 ? 'disabled' : ''}>下一個 ➡️</button>
         </div>
         
-        <div class="fc-status-row">
-            <button class="warning ${currentCat==='due'?'':'secondary'}" style="${currentCat==='due'?'border:2px solid #8a5323':''}" onclick="markFlashcardStatus('${safeWord}', 'due')">🎯 標為待複習</button>
-            <button class="warning ${currentCat==='learning'?'':'secondary'}" style="${currentCat==='learning'?'border:2px solid #8a5323':''}" onclick="markFlashcardStatus('${safeWord}', 'learning')">📖 標為學習中</button>
-            <button class="success ${currentCat==='mastered'?'':'secondary'}" style="${currentCat==='mastered'?'border:2px solid #2d5e3c':''}" onclick="markFlashcardStatus('${safeWord}', 'mastered')">🏆 標為已精通</button>
+        <div class="fc-status-row" aria-label="選擇熟練度">
+            <button class="due-status ${currentCat==='due'?'is-active':''}" onclick="markFlashcardStatus('${safeWord}', 'due')">🎯 待複習</button>
+            <button class="learning-status ${currentCat==='learning'?'is-active':''}" onclick="markFlashcardStatus('${safeWord}', 'learning')">📖 學習中</button>
+            <button class="mastered-status ${currentCat==='mastered'?'is-active':''}" onclick="markFlashcardStatus('${safeWord}', 'mastered')">🏆 已精通</button>
         </div>
     `;
+    requestAnimationFrame(fitFlashcardWord);
     
     // 預設發音一次
     // speakText(safeWord, 'female'); // 可選，如果你希望載入卡片就自動發音，可取消註解此行
@@ -3150,6 +3373,7 @@ function markFlashcardStatus(wordStr, newCat) {
     renderCurrentFlashcard();
 }
 
+window.addEventListener('resize', () => requestAnimationFrame(fitFlashcardWord));
 document.addEventListener("DOMContentLoaded", () => {
     refreshActiveView();
     updateSyncStatusDisplay();
